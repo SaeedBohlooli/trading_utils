@@ -2,8 +2,7 @@ import sys
 import time
 
 sys.path.insert(0, f'../')
-import plotly.io as pio
-import plotly.graph_objects as go
+
 
 import logging
 import os.path
