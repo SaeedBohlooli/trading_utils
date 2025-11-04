@@ -1,5 +1,6 @@
 import sys
 import time
+from tabulate import tabulate
 
 sys.path.insert(0, f'../')
 
@@ -70,3 +71,66 @@ def capture_df_starting_hour_x_on_last_day(df, date_f='date', cutoff_time="13:00
     # Keep everything aftere that cutoff on the last day, and all prior days
     cut_df = df[(mask_day & mask_time)]
     return cut_df
+
+
+
+def drop_dupplicates_in_file(file_path, unique_column=None, keep='last'):
+    # Drop dupplicaes
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+        if unique_column is None:
+            df = df.drop_duplicates(keep=f'{keep}')
+        else: # has fields ...
+            df = df.drop_duplicates(subset=[f'{unique_column}'], keep=f'{keep}')
+        df.to_csv(file_path, index=False, mode='w')
+    return
+
+def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=True, unique_column='unique_id'):
+    if len(df) > 0:
+
+        if mode == 'w':
+            header = True
+
+        else:
+            # moed is a, check columns
+            if os.path.exists(file_path):
+                existing_cols = pd.read_csv(file_path, nrows=0).columns.tolist()
+                # --- Compare with new df columns
+                if list(df.columns) == existing_cols:
+                    mode = 'a'
+                    header = False
+                else:
+                    mode = 'w'
+                    header = True
+            else:
+                header = True
+
+        df.to_csv(file_path, mode=mode, index=False, header=header)
+
+        if drop_dupplicates:
+            if unique_column != '' and unique_column in df.columns:
+                drop_dupplicates_in_file(file_path, unique_column=unique_column)  # 'event'
+            else:
+                drop_dupplicates_in_file(file_path)  # 'event'
+
+        write_file_in_tabulate(src_file_path=file_path)
+    return
+
+
+def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=0):
+
+    df = pd.read_csv(src_file_path)
+    if len(df) > 0:
+        if dest_file_path is None:
+            dest_file_path = f"{src_file_path}-txt.csv"
+        # Convert only object and bool columns to string (vectorized)
+        # FIXME not happy to do that as may affect performance ...
+        # for col in df.select_dtypes(include=['object', 'bool']):
+        #     df[col] = df[col].astype(str)
+        with open(dest_file_path, 'w') as f:
+            if number_of_rows == 0:
+                # write all
+                f.write(tabulate(df.astype(str), headers='keys', tablefmt='psql'))
+            else:
+                f.write(tabulate(df[-number_of_rows:].astype(str), headers='keys', tablefmt='psql')) #, numalign=None, stralign='left'
+    return
