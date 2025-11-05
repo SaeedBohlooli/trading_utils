@@ -99,7 +99,7 @@ def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=T
                 if list(df.columns) == existing_cols:
                     mode = 'a'
                     header = False
-                else:
+                else: # columns are not same, we overwrite ...
                     mode = 'w'
                     header = True
             else:
