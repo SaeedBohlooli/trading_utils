@@ -59,7 +59,7 @@ def write_health_status(portfolio_id):
     with open(health_status_file_path, "w", encoding="utf-8") as f:
         f.write(message)
 
-    logger.info(f"✅ Health status written: {message.strip()}")
+    logger.info(f"Health status written: {message.strip()}")
 
     return
 
@@ -96,10 +96,11 @@ if __name__ == "__main__":
 
                         print(f"Sending email ...last_email_time: {last_email_time}, now_time: {now_time}, minutes_from_last_email: {minutes_from_last_email}")
                         email_recipients = app_config.get('health_check',{}).get('email_recipients')
-                        subject = app_config.get('health_check',{}).get('email_subject', f'{portfolio_id} is not healthy' )
+                        # subject = app_config.get('health_check',{}).get('email_subject', f'{portfolio_id} is not healthy' )
+                        subject = f"{portfolio_id} is not healthy"
                         body = f"Hello, <br\><br\>Application in {portfolio_id} is not healthy.  <br\> Check it out ..."
 
                         email_utils.send_email(email_recipients, subject, body=body)
 
-        print('sleeping ....')
+        print(f'sleeping {portfolio_id} ....')
         time.sleep(1 * 60)
