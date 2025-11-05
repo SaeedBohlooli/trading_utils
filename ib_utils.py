@@ -57,7 +57,7 @@ def on_commission_report(trade, fill, commission_report):
 def on_portfolio_update(item):
     """Update or insert portfolio position."""
     flatten_dic = flatten(item)
-    logger.info(f"on_portfolio_update(), flatten :{flatten_dic}")
+    logger.debug(f"on_portfolio_update(), flatten :{flatten_dic}")
     global_state.ib_portfolio_df = pd.concat([global_state.ib_portfolio_df, pd.DataFrame([flatten_dic])], ignore_index=True)
 
     return
