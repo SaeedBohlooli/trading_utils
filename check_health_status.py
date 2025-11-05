@@ -86,7 +86,9 @@ if __name__ == "__main__":
         is_healthy = check_health_status(health_status_file_path)
         if not is_healthy:
             if app_config.get('health_check',{}).get('send_email', False):
-                if eval(app_config.get('health_check',{}).get('email_hours', False)):
+                if not eval(app_config.get('health_check', {}).get('email_hours', '1 == 2')):
+                    print(f"We are not sending email, email_hours: {app_config.get('health_check', {}).get('email_hours', False)}")
+                else:
                     now_time = time.time()
                     minutes_from_last_email =  round( (now_time - last_email_time) / 60 , 2)
                     print(f"minutes_from_last_email: {minutes_from_last_email}")
