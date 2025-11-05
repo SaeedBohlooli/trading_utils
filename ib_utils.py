@@ -125,7 +125,7 @@ def generate_ib_execution_df(ib):
     for trade in execs:
         i = i + 1
         if i < 2:
-            logger.info(f"generate_ib_execution_df(), trade: {trade}")
+            logger.debug(f"generate_ib_execution_df(), trade: {trade}")
 
         flatten_dic = flatten(trade)
         logger.debug(f"generate_ib_execution_df, flatten :{flatten_dic}")
