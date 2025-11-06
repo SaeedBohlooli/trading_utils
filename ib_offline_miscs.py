@@ -26,7 +26,7 @@ def extract_trades_with_prices(df):
     trades = []
     for contract_localSymbol, group in df.groupby("contract_localSymbol"):
         group = group.sort_values("execution_time").reset_index(drop=True)
-        if 'TSLL' in contract_localSymbol:
+        if 'NVDA' in contract_localSymbol:
             print(f"group, {contract_localSymbol}, group: \n{group.to_markdown()} ")
 
         pos = 0
@@ -36,6 +36,11 @@ def extract_trades_with_prices(df):
         open_time = None
         commission = 0.0
         execution_orderRef = ""
+        num_of_orders = 0
+        close_price_avg = 0
+        total_sell = 0
+        sell_qty = 0
+
         for _, row in group.iterrows():
             qty = row["signed_qty"]
             price = row["execution_avgPrice"]
@@ -43,10 +48,10 @@ def extract_trades_with_prices(df):
             realized_pnl += row.get("realizedPNL", 0) or 0
             commission += row.get("commission", 0) or 0
             execution_orderRef += " # " + row["execution_orderRef"]
-
+            num_of_orders += 1
             # -- BUY (open or add)
             if qty > 0:
-                if pos == 0:
+                if pos == 0: # it is first time ....
                     open_time = row["execution_time"]
                     open_price = price
                     total_cost = qty * price
@@ -58,18 +63,22 @@ def extract_trades_with_prices(df):
 
             # -- SELL (reduce or close)
             elif qty < 0:
-                sell_qty = abs(qty)
+                sell_qty += abs(qty)
                 close_time = row["execution_time"]
-                close_price = price
+                close_price = price # this takes latest ..
+                total_sell += price * abs(qty)
+                close_price_avg = total_sell / sell_qty
 
                 # If it fully closes
                 if sell_qty == pos:
                     trades.append({
                         "contract_localSymbol": contract_localSymbol,
+                        'num_of_orders': num_of_orders,
                         "contract_symbol": contract_symbol,
                         "contracts": pos,
                         "open_price": round(open_price, 2),
                         "close_price": round(close_price, 2),
+                        "close_price_avg": round(close_price_avg, 2),
                         "realized_pnl": round(realized_pnl, 2),
                         "commission": round(commission, 2),
                         "open_time": open_time,
@@ -91,10 +100,12 @@ def extract_trades_with_prices(df):
         if pos > 0:
             trades.append({
                 "contract_localSymbol": contract_localSymbol,
+                'num_of_orders': num_of_orders,
                 "contract_symbol": contract_symbol,
                 "contracts": pos,
                 "open_price": round(open_price, 2),
                 "close_price": None,
+                "close_price_avg": None,
                 "realized_pnl": None,
                 "commission": None,
                 "open_time": open_time,
@@ -106,104 +117,22 @@ def extract_trades_with_prices(df):
     trades_df = pd.DataFrame(trades).sort_values("open_time")
 
     return trades_df
-def summarize_trades(df):
-    trades = []
-
-    for symbol, group in df.groupby("contract_localSymbol"):
-        group = group.sort_values("execution_time").reset_index(drop=True)
-        # print(f"group, {symbol}, group: \n{group.to_markdown()} ")
-
-        open_time = None
-        open_price = 0.0
-        total_qty = 0
-        realized_pnl = 0.0
-        commission = 0.0
-        last_price = None
-        current_pos = 0
-        execution_orderRef = ""
-
-        for _, row in group.iterrows():
-            prev_pos = current_pos
-            current_pos = row["cum_position"]
-
-            side = row["execution_side"]
-            price = row["execution_avgPrice"]
-            qty = row["execution_shares"]
-            realized_pnl += row.get("realizedPNL", 0) or 0
-            commission += row.get("commission", 0) or 0
-            execution_orderRef += " # " + row["execution_orderRef"]
-
-            # --- Opening new trade ---
-            if prev_pos == 0 and current_pos != 0:
-                open_time = row["execution_time"]
-                open_price = price
-                total_qty = current_pos
-                realized_pnl = 0.0
-                commission = 0.0
-
-            # --- Updating while open ---
-            if current_pos != 0:
-                last_price = price
-
-            # --- Closing trade completely ---
-            if prev_pos != 0 and current_pos == 0:
-                trades.append({
-                    "contract_localSymbol": symbol,
-                    "contract_symbol": row["contract_symbol"],
-                    "contracts": abs(prev_pos),
-                    "open_price": round(open_price, 2),
-                    "close_price": round(last_price, 2),
-                    "realized_pnl": round(realized_pnl, 2),
-                    "commission": round(commission, 2),
-                    "open_time": open_time,
-                    "close_time": row["execution_time"],
-                    "execution_orderRef": execution_orderRef,
-
-                })
-                # reset for next possible round-trip
-                open_time = None
-                open_price = 0.0
-                total_qty = 0
-                realized_pnl = 0.0
-                commission = 0.0
-                last_price = None
-
-        # --- Still open at end of period ---
-        if current_pos != 0:
-            trades.append({
-                "contract_localSymbol": symbol,
-                "contract_symbol": group.iloc[0]["contract_symbol"],
-                "contracts": abs(current_pos),
-                "open_price": round(open_price, 2),
-                "close_price": None,
-                "realized_pnl": None,
-                "commission": None,
-                "open_time": open_time,
-                "close_time": None,
-                "execution_orderRef": execution_orderRef,
-
-            })
-
-    trades_df = pd.DataFrame(trades).sort_values("open_time").reset_index(drop=True)
-    return trades_df
 
 
-def orchestrate(portfolio_id ='p250'):
+def orchestrate(portfolio_id='p250'):
     portfolio_dir = f'../../portfolios/results/{portfolio_id}'
 
     executions_df = ib_utils.load_ib_df(portfolio_dir, 'ib_on_fill_fill_df')
     executions_df = polish_executions_df(executions_df)
 
     print('--------------------------')
-    print(
-        f"executions_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_df, 'execution_time', '00:00').to_markdown()}")
+    print(f"executions_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_df, 'execution_time', '00:00').to_markdown()}")
 
     commission_df = ib_utils.load_ib_df(portfolio_dir, 'ib_commission_df')
     merged_df = pd.merge(executions_df, commission_df, left_on="execution_execId", right_on="execId", how="left")
 
     print('--------------------------')
-    print(
-        f"merged_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(merged_df, 'execution_time', '00:00').to_markdown()}")
+    print(f"merged_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(merged_df, 'execution_time', '00:00').to_markdown()}")
 
     # TODO debug ,,,
     merged_df = df_utils.capture_df_starting_hour_x_on_last_day(merged_df, 'execution_time', '00:00')
@@ -212,11 +141,10 @@ def orchestrate(portfolio_id ='p250'):
     print('--------------------------')
     print(f"trades_w_prices_df \n{trades_w_prices_df[0:].to_markdown()}")
 
-    summarize_trades_df = summarize_trades(merged_df)
-
-    print('--------------------------')
-    print(
-        f"summarize_trades_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(summarize_trades_df, 'open_time', '00:00').to_markdown()}")
+    # summarize_trades_df = summarize_trades(merged_df)
+    #
+    # print('--------------------------')
+    # print(f"summarize_trades_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(summarize_trades_df, 'open_time', '00:00').to_markdown()}")
 
 
 if __name__ == "__main__":
