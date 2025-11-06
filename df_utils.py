@@ -1,7 +1,6 @@
 import sys
 import time
 from tabulate import tabulate
-
 sys.path.insert(0, f'../')
 
 
@@ -86,6 +85,7 @@ def drop_dupplicates_in_file(file_path, unique_column=None, keep='last'):
     return
 
 def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=True, unique_column='unique_id'):
+    # TODO unique_column should be a list
     if len(df) > 0:
 
         if mode == 'w':
