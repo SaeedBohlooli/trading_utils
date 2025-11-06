@@ -28,12 +28,15 @@ def extract_trades_with_prices(df):
         group = group.sort_values("execution_time").reset_index(drop=True)
         if 'NVDA' in contract_localSymbol:
             print(f"group, {contract_localSymbol}, group: \n{group.to_markdown()} ")
+        print(f"group, {contract_localSymbol}, group: \n{group.to_markdown()} ")
 
         pos = 0
         open_price = 0
+        close_price = 0
         total_cost = 0
         realized_pnl = 0
         open_time = None
+        close_time = None
         commission = 0.0
         execution_orderRef = ""
         num_of_orders = 0
@@ -53,13 +56,10 @@ def extract_trades_with_prices(df):
             if qty > 0:
                 if pos == 0: # it is first time ....
                     open_time = row["execution_time"]
-                    open_price = price
-                    total_cost = qty * price
-                    pos = qty
-                else:
-                    total_cost += qty * price
-                    pos += qty
-                    open_price = total_cost / pos  # weighted average
+
+                pos += qty
+                total_cost += qty * price
+                open_price = total_cost / pos  # weighted average
 
             # -- SELL (reduce or close)
             elif qty < 0:
@@ -68,51 +68,23 @@ def extract_trades_with_prices(df):
                 close_price = price # this takes latest ..
                 total_sell += price * abs(qty)
                 close_price_avg = total_sell / sell_qty
+                pos -= abs(qty)
+                total_cost = open_price * pos  # remaining cost
 
-                # If it fully closes
-                if sell_qty == pos:
-                    trades.append({
-                        "contract_localSymbol": contract_localSymbol,
-                        'num_of_orders': num_of_orders,
-                        "contract_symbol": contract_symbol,
-                        "contracts": pos,
-                        "open_price": round(open_price, 2),
-                        "close_price": round(close_price, 2),
-                        "close_price_avg": round(close_price_avg, 2),
-                        "realized_pnl": round(realized_pnl, 2),
-                        "commission": round(commission, 2),
-                        "open_time": open_time,
-                        "close_time": close_time,
-                        "execution_orderRef": execution_orderRef,
-                    })
-                    pos = 0
-                    total_cost = 0
-                    open_price = 0
-                    realized_pnl = 0
-                    open_time = None
-
-                # If partial close
-                elif sell_qty < pos:
-                    pos -= sell_qty
-                    total_cost = open_price * pos  # remaining cost
-
-        # Still open?
-        if pos > 0:
-            trades.append({
-                "contract_localSymbol": contract_localSymbol,
-                'num_of_orders': num_of_orders,
-                "contract_symbol": contract_symbol,
-                "contracts": pos,
-                "open_price": round(open_price, 2),
-                "close_price": None,
-                "close_price_avg": None,
-                "realized_pnl": None,
-                "commission": None,
-                "open_time": open_time,
-                "close_time": None,
-                "execution_orderRef": execution_orderRef,
-
-            })
+        trades.append({
+            "contract_localSymbol": contract_localSymbol,
+            'num_of_orders': num_of_orders,
+            "contract_symbol": contract_symbol,
+            "contracts": pos,
+            "open_price": round(open_price, 2),
+            "close_price": round(close_price, 2),
+            "close_price_avg": round(close_price_avg, 2),
+            "realized_pnl": round(realized_pnl, 2),
+            "commission": round(commission, 2),
+            "open_time": open_time,
+            "close_time": close_time,
+            "execution_orderRef": execution_orderRef,
+        })
 
     trades_df = pd.DataFrame(trades).sort_values("open_time")
 
