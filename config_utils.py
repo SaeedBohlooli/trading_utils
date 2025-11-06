@@ -15,7 +15,8 @@ def load_config(file_path ='config.yaml') -> dict:
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             local_config = yaml.safe_load(file)
-            config.update(local_config)
+            if local_config != None:
+                config.update(local_config)
 
     logger.info(f"config: {config}")
 
