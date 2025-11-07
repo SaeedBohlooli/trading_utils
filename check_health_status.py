@@ -66,7 +66,7 @@ def write_health_status(portfolio_id):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--portfolio-id', help="active portfolio", default='p000')
+    parser.add_argument('--portfolio-id', help="active portfolio", default='p250')
     args = parser.parse_args()
     portfolio_id = args.portfolio_id
 
