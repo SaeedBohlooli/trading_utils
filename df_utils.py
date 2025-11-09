@@ -71,8 +71,6 @@ def capture_df_starting_hour_x_on_last_day(df, date_f='date', cutoff_time="13:00
     cut_df = df[(mask_day & mask_time)]
     return cut_df
 
-
-
 def drop_dupplicates_in_file(file_path, unique_column=None, keep='last'):
     # Drop dupplicaes
     if os.path.exists(file_path):
