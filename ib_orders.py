@@ -8,13 +8,15 @@ sys.path.insert(0, f'../')
 
 from trading_utils import ib_utils
 from trading_utils import date_utils
+from trading_utils import ib_pricing
+from trading_utils import ib_posttrade
 
 logger = logging.getLogger(__name__)
 
 def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_price, quantity, order_ref, candle_date=''):
 
-    tp_price = ib_utils.round_based_on_symbol(contract.symbol, take_profit_price)
-    sl_price = ib_utils.round_based_on_symbol(contract.symbol, stop_loss_price)
+    tp_price = ib_pricing.round_based_on_symbol(contract.symbol, take_profit_price)
+    sl_price = ib_pricing.round_based_on_symbol(contract.symbol, stop_loss_price)
 
     parent_order_id = ib.client.getReqId()
     side = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL' # unify ..
@@ -47,15 +49,15 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
 
     # Place all 3
     parent_trade = ib.placeOrder(contract, parent)
-    parent_trade.fillEvent += ib_utils.on_fill
+    parent_trade.fillEvent += ib_posttrade.on_fill
     logger.warning(f"parent_trade: {parent_trade}")
 
     tp_trade = ib.placeOrder(contract, tp)
-    tp_trade.fillEvent += ib_utils.on_fill
+    tp_trade.fillEvent += ib_posttrade.on_fill
     logger.warning(f"tp_trade: {tp_trade}")
 
     sl_trade = ib.placeOrder(contract, sl)
-    sl_trade.fillEvent += ib_utils.on_fill
+    sl_trade.fillEvent += ib_posttrade.on_fill
     logger.warning(f"sl_trade: {sl_trade}")
     logger.info("@@ before sleep")
     ib.sleep(1)
@@ -83,19 +85,7 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
     time.sleep(3)
     return data
 
-def create_future_contract(symbol, contract_month=''):
-    if symbol == 'MNQ':
-        contract = Future('MNQ', contract_month, 'CME')
-    elif symbol == 'BTC':
-        contract_btc = Contract()
-        contract_btc.symbol = "BTC"
-        contract_btc.secType = "CRYPTO"
-        contract_btc.currency = "USD"
-        contract_btc.exchange = "PAXOS"
-        contract = contract_btc
-    else:
-        contract = Stock(symbol, 'SMART', 'USD')
-    return contract
+
 
 
 def get_all_open_orders(ib):

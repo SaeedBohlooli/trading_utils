@@ -115,3 +115,33 @@ def get_quote_for_contracts(ib,contracts):
     logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
 
     return df
+
+
+def create_equity_contract(symbol, contract_month=''):
+    if symbol == 'MNQ':
+        contract = Future('MNQ', contract_month, 'CME')
+    elif symbol == 'BTC':
+        contract_btc = Contract()
+        contract_btc.symbol = "BTC"
+        contract_btc.secType = "CRYPTO"
+        contract_btc.currency = "USD"
+        contract_btc.exchange = "PAXOS"
+        contract = contract_btc
+    else:
+        contract = Stock(symbol, 'SMART', 'USD')
+    return contract
+
+
+# def create_future_contract(symbol, contract_month=None):
+#     if symbol == 'MNQ':
+#         contract = Future('MNQ', contract_month, 'CME')
+#     elif symbol == 'BTC':
+#         contract_btc = Contract()
+#         contract_btc.symbol = "BTC"
+#         contract_btc.secType = "CRYPTO"
+#         contract_btc.currency = "USD"
+#         contract_btc.exchange = "PAXOS"
+#         contract = contract_btc
+#     else:
+#         contract = Stock(symbol, 'SMART', 'USD')
+#     return contract
