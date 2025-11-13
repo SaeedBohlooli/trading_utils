@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, f'../')
 from trading_utils import global_state
 from trading_utils import df_utils
+from trading_utils import date_utils
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ df_file_map = {
     "ib_commission_fill_df": f"89-ib_commission_fill_df.csv",
     "ib_commission_trade_df": f"90-ib_commission_trade_df.csv",
     "ib_execution_df": f"91-ib_execution_df.csv",
+    "ib_errors_df": f"92-ib_errors_df.csv",
 }
 
 
@@ -80,7 +82,17 @@ def on_fill(trade, fill):
 
     return
 
+def on_error(reqId, errorCode, errorMsg, contract):
+    logger.warning(f"@@ IB error {errorCode} (reqId={reqId}): {errorMsg}, contract: {contract}")
+    data = {
+        'date': str(date_utils.time_now()),
+        'errorCode': f'{errorCode}',
+        'errorMsg': f'{errorMsg}',
+        'contract': f'{contract}',
+    }
 
+    global_state.ib_errors_df = pd.concat([global_state.ib_errors_df, pd.DataFrame([data])], ignore_index=True)
+    return
 
 def save_ib_dfs(portfolio_dir, ib):
 

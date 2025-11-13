@@ -81,8 +81,8 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
         'open_trade_take_profit_order_id' : tp_order_id,
       }
 
-    logger.info("order sent.. we sleep 3 sec to order get executed ..") # removing sleep will cause issue
-    time.sleep(3)
+    logger.info("order sent.. we sleep 1 sec to order get executed ..") # removing sleep will cause issue
+    time.sleep(1)
     return data
 
 
@@ -114,4 +114,20 @@ def cancel_open_option_orders(ib, symbol):
                     ib.sleep(0.5)
             else:
                 logger.warning(f"in cancel_all_open_orders, not canceling order.contract.symbol: {order.contract.symbol}")
+    return
+
+def cancel_open_order(ib, order_id):
+    logger.warning(f"Canceling open order order_id: {order_id}")
+    open_orders = ib.reqAllOpenOrders()
+    found = False
+    for order in open_orders:
+        if order.order.orderId == order_id:
+            logger.warning(f"Canceling open order, order: {order}")
+            trade = ib.cancelOrder(order.order)
+            trade.fillEvent += ib_utils.on_fill
+            logger.warning(f"trade: {trade}")
+            ib.sleep(1)
+            found = True
+    if not found:
+        logger.warning(f"@@@ Couldn't fine the order to cancel, order_id: {order_id}")
     return
