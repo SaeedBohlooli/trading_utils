@@ -4,6 +4,7 @@ import logging
 import time
 import math
 import pandas as pd
+import pprint
 sys.path.insert(0, f'../')
 
 from trading_utils import ib_utils
@@ -20,12 +21,15 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
 
     parent_order_id = ib.client.getReqId()
     side = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL' # unify ..
-    revers = 'SELL' if side == 'BUY' else 'SELL'
+    revers = 'SELL' if side == 'BUY' else 'BUY'
+
+    logger.warning(f"side: {side}, revers: {revers}, tp_price: {tp_price}, sl_price:{sl_price}, contract: {contract} ")
 
     parent = MarketOrder(side, quantity, orderId=parent_order_id)
     parent.outsideRth = True
     parent.transmit = False
     parent.tif = 'GTC'
+    parent.outsideRth = True
     parent.orderRef = f'{order_ref}'
     logger.warning(f"parent: {parent}")
 
@@ -35,6 +39,7 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
     tp.outsideRth = True
     tp.transmit = False
     tp.tif = 'GTC'
+    tp.outsideRth = True
     tp.orderRef = f'{order_ref}-TP'
     logger.warning(f"tp: {tp}")
 
@@ -44,6 +49,7 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
     sl.transmit = True  # Last child sets transmit=True
     sl.outsideRth = True
     sl.tif = 'GTC'
+    sl.outsideRth = True
     sl.orderRef = f'{order_ref}-SL'
     logger.warning(f"sl: {sl}")
 
@@ -59,6 +65,8 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
     sl_trade = ib.placeOrder(contract, sl)
     sl_trade.fillEvent += ib_posttrade.on_fill
     logger.warning(f"sl_trade: {sl_trade}")
+
+
     logger.info("@@ before sleep")
     ib.sleep(1)
     logger.info("@@ after ib sleep")

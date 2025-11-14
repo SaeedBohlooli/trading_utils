@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 
 def round_based_on_symbol(symbol, price):
     if symbol == 'MNQ':
-        return round(price * 4) / 4
+        return round(price / 5) * 5  # returns 10,15,20 ...
+        # return (price // 5) * 5 This returns the floor ..
     else:
         return price
 

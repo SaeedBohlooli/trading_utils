@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import configparser
-
+from trading_utils import file_utils
 def cut_df_strating_hour_x_on_last_day(df, cutoff_time="13:00"):
     df = df.copy()
     df['date'] = pd.to_datetime(df['date'])
@@ -98,6 +98,7 @@ def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=T
                     mode = 'a'
                     header = False
                 else: # columns are not same, we overwrite ...
+                    file_utils.create_a_backup(file_path)
                     mode = 'w'
                     header = True
             else:

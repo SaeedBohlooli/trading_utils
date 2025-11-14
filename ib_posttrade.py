@@ -6,7 +6,7 @@ import time
 import datetime
 from ib_insync import *
 import sys
-
+import pprint
 sys.path.insert(0, f'../')
 from trading_utils import global_state
 from trading_utils import df_utils
@@ -74,6 +74,7 @@ def on_fill(trade, fill):
 
     flatten_dic = flatten(fill)
     logger.info(f":flatten :{flatten_dic}")
+    logger.info(f":flatten - print :\n{pprint.pformat(flatten_dic)}")
     global_state.ib_on_fill_fill_df = pd.concat([global_state.ib_on_fill_fill_df, pd.DataFrame([flatten_dic])], ignore_index=True)
 
     flatten_dic = flatten(trade)
