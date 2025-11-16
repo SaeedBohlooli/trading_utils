@@ -6,7 +6,7 @@ import time
 import datetime
 from ib_insync import *
 import sys
-
+import random
 sys.path.insert(0, f'../')
 from trading_utils import global_state
 from trading_utils import df_utils
@@ -78,7 +78,18 @@ def get_current_price(ib, contract): #TODO add rety ...
     return current_price
 
 
+def generate_fake_spx_price(base=6000.0, volatility=5.0):
+    x = round(base + random.uniform(-volatility, volatility), 2)
+    return round_to_increment(x, 5)
+
+def generate_fake_price(base=100.0, volatility=5.0):
+    return round(base + random.uniform(-volatility, volatility), 2)
+
 def get_current_price_SPX(ib, symbol='SPX'):  # Remy app
+
+    if global_state.ib_config.get('fall_back', '1 == 2'):
+        return generate_fake_spx_price()
+
     spx = Index(symbol='SPX', exchange='CBOE', currency='USD')
     ib.qualifyContracts(spx)
 
@@ -91,10 +102,33 @@ def get_current_price_SPX(ib, symbol='SPX'):  # Remy app
 
     return last_price
 
-def get_quote_for_contracts(ib,contracts):
-    logger.info(f"calling ib.reqTickers for contracts ... ...")
+def get_quote_for_contracts(ib, contracts):
+
+
+    if global_state.ib_config.get('fall_back', '1 == 2'):
+        data_list = []
+        for contract in contracts:
+            data = {
+                "symbol": contract.symbol,
+                "expiry": contract.lastTradeDateOrContractMonth,
+                "strike": contract.strike,
+                "right": contract.right,
+                "bid": generate_fake_price(10),
+                "ask": generate_fake_price(10),
+                "last": generate_fake_price(10),
+            }
+
+            data_list.append(data)
+
+        df = pd.DataFrame(data_list)
+
+        logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
+
+        return df
+
+    logger.info(f"get_quote_for_contracts, calling ib.reqTickers started  ... ")
     tickers = ib.reqTickers(*contracts)
-    logger.info(f"calling ib.reqTickers is done ..")
+    logger.info(f"get_quote_for_contracts, calling ib.reqTickers finished  ...")
     # Build DataFrame
     data_list = []
     for t in tickers:
@@ -115,3 +149,74 @@ def get_quote_for_contracts(ib,contracts):
     logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
 
     return df
+
+
+def qualify_contracts(ib, contracts):
+    logger.info(f"TBD")
+    if global_state.ib_config.get('fall_back', '1 == 2'):
+        return contracts
+
+    qualified_contracts = ib.qualifyContracts(*contracts)
+    logger.info(f"qualify_contracts, qualified: {qualified_contracts}")
+    return qualified_contracts
+
+
+import time
+import logging
+from ib_insync import *
+
+logger = logging.getLogger(__name__)
+
+def qualify_contracts_with_retry(ib, contracts, max_retries=5, sleep_sec=0.5):
+    """
+    Qualify a LIST of IB contracts with retry logic.
+
+    Params:
+        ib: IB instance
+        contracts: list of unqualified IB contracts
+        max_retries: number of retries
+        sleep_sec: sleep between retries
+
+    Returns:
+        (qualified, failed)
+        qualified → list of successfully qualified contracts
+        failed → list of contracts that could not be qualified
+    """
+
+    # Make a mutable copy
+    pending = contracts.copy()
+    qualified = []
+    failed = []
+
+    for attempt in range(1, max_retries + 1):
+        if not pending:
+            break  # nothing left to qualify
+
+        logger.info(f"[BulkQualify] Attempt {attempt}/{max_retries}, pending={len(pending)}")
+
+        try:
+            # IB can qualify only using *args
+            result = ib.qualifyContracts(*pending)
+        except Exception as e:
+            logger.warning(f"[BulkQualify] Error on attempt {attempt}: {e}")
+            time.sleep(sleep_sec)
+            continue
+
+        # result is a list in the SAME ORDER as 'pending', but failed ones become "" placeholder
+        still_pending = []
+
+        for original_contract, qualified_contract in zip(pending, result):
+            if qualified_contract and getattr(qualified_contract, "conId", 0) != 0:
+                qualified.append(qualified_contract)
+            else:
+                still_pending.append(original_contract)
+
+        pending = still_pending
+        time.sleep(sleep_sec)
+
+    # Anything still pending after retries = failed
+    failed.extend(pending)
+
+    logger.info(f"[BulkQualify] Done. Qualified={len(qualified)}, Failed={len(failed)}")
+
+    return qualified, failed

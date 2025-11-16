@@ -11,7 +11,7 @@ def format_yyyymmdd(date_obj):
     """
     return date_obj.strftime("%Y%m%d")
 
-def next_business_day(start_date=None):
+def next_business_day(start_date=None, offset=1):
     """
     Return the next business day after start_date.
     Skips weekends only (Saturday/Sunday).
@@ -19,10 +19,10 @@ def next_business_day(start_date=None):
     if start_date is None:
         start_date = datetime.date.today()
 
-    next_day = start_date + datetime.timedelta(days=1)
+    next_day = start_date + datetime.timedelta(days=offset)
 
     # If Saturday → skip to Monday
     if next_day.weekday() == 5:
-        next_day += datetime.timedelta(days=2)
+        next_day += datetime.timedelta(days=offset + 2)
 
     return next_day

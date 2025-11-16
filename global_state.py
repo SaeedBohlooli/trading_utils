@@ -10,3 +10,5 @@ ib_commission_trade_df = pd.DataFrame()
 ib_commission_fill_df = pd.DataFrame()
 ib_execution_df = pd.DataFrame()
 
+ib_config = {}
+
