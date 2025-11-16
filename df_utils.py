@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import configparser
-
+from trading_utils import file_utils
 def cut_df_strating_hour_x_on_last_day(df, cutoff_time="13:00"):
     df = df.copy()
     df['date'] = pd.to_datetime(df['date'])
@@ -98,6 +98,7 @@ def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=T
                     mode = 'a'
                     header = False
                 else: # columns are not same, we overwrite ...
+                    file_utils.create_a_backup(file_path)
                     mode = 'w'
                     header = True
             else:
@@ -132,3 +133,34 @@ def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=0
             else:
                 f.write(tabulate(df[-number_of_rows:].astype(str), headers='keys', tablefmt='psql')) #, numalign=None, stralign='left'
     return
+
+
+
+def move_last_x_to_position_y(df, x, y):
+    if len(df) < 1:
+        return df
+    """
+    Move the last x columns to position y (0-based index).
+
+    Example:
+        move_last_x_to_position_y(df, x=3, y=2)
+        → moves last 3 cols to become columns 2,3,4.
+    """
+
+    cols = list(df.columns)
+
+    # Safety checks
+    if x <= 0 or x > len(cols):
+        raise ValueError("x must be between 1 and number of columns")
+    if y < 0 or y > len(cols) - x:
+        raise ValueError("y out of range")
+
+    # Extract parts
+    last_x = cols[-x:]       # last X columns
+    first_part = cols[:y]    # before the insertion position
+    middle_part = cols[y:-x] # columns between y and the last X slice
+
+    # Build final column order
+    new_order = first_part + last_x + middle_part
+
+    return df[new_order]

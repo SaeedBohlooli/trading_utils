@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 
 def round_based_on_symbol(symbol, price):
     if symbol == 'MNQ':
-        return round(price * 4) / 4
+        return round(price / 5) * 5  # returns 10,15,20 ...
+        # return (price // 5) * 5 This returns the floor ..
     else:
         return price
 
@@ -78,18 +79,7 @@ def get_current_price(ib, contract): #TODO add rety ...
     return current_price
 
 
-def generate_fake_spx_price(base=6000.0, volatility=5.0):
-    x = round(base + random.uniform(-volatility, volatility), 2)
-    return round_to_increment(x, 5)
-
-def generate_fake_price(base=100.0, volatility=5.0):
-    return round(base + random.uniform(-volatility, volatility), 2)
-
 def get_current_price_SPX(ib, symbol='SPX'):  # Remy app
-
-    if global_state.ib_config.get('fall_back', '1 == 2'):
-        return generate_fake_spx_price()
-
     spx = Index(symbol='SPX', exchange='CBOE', currency='USD')
     ib.qualifyContracts(spx)
 
@@ -149,6 +139,37 @@ def get_quote_for_contracts(ib, contracts):
     logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
 
     return df
+
+
+def create_equity_contract(symbol, contract_month=''):
+    if symbol == 'MNQ':
+        contract = Future('MNQ', contract_month, 'CME')
+    elif symbol == 'BTC':
+        contract_btc = Contract()
+        contract_btc.symbol = "BTC"
+        contract_btc.secType = "CRYPTO"
+        contract_btc.currency = "USD"
+        contract_btc.exchange = "PAXOS"
+        contract = contract_btc
+    else:
+        contract = Stock(symbol, 'SMART', 'USD')
+    return contract
+
+
+# def create_future_contract(symbol, contract_month=None):
+#     if symbol == 'MNQ':
+#         contract = Future('MNQ', contract_month, 'CME')
+#     elif symbol == 'BTC':
+#         contract_btc = Contract()
+#         contract_btc.symbol = "BTC"
+#         contract_btc.secType = "CRYPTO"
+#         contract_btc.currency = "USD"
+#         contract_btc.exchange = "PAXOS"
+#         contract = contract_btc
+#     else:
+#         contract = Stock(symbol, 'SMART', 'USD')
+#     return contract
+
 
 
 def qualify_contracts(ib, contracts):
