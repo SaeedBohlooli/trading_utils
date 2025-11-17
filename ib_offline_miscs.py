@@ -132,15 +132,15 @@ def do_y(df):
     return summary_df
 
 def orchestrate(portfolio_id='p250'):
-    portfolio_dir = f'../../portfolios/results/{portfolio_id}'
+    ib_dir = f'../../portfolios/ib/{portfolio_id}'
 
-    executions_df = ib_posttrade.load_ib_df(portfolio_dir, 'ib_on_fill_fill_df')
+    executions_df = ib_posttrade.load_ib_df(ib_dir, 'ib_on_fill_fill_df')
     executions_df = polish_executions_df(executions_df)
 
     print('--------------------------')
     print(f"executions_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_df, 'execution_time', '00:00').to_markdown()}")
 
-    commission_df = ib_posttrade.load_ib_df(portfolio_dir, 'ib_commission_df')
+    commission_df = ib_posttrade.load_ib_df(ib_dir, 'ib_commission_df')
     merged_df = pd.merge(executions_df, commission_df, left_on="execution_execId", right_on="execId", how="left")
 
     print('--------------------------')

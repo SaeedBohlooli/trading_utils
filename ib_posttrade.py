@@ -95,7 +95,7 @@ def on_error(reqId, errorCode, errorMsg, contract):
     global_state.ib_errors_df = pd.concat([global_state.ib_errors_df, pd.DataFrame([data])], ignore_index=True)
     return
 
-def save_ib_dfs(portfolio_dir, ib):
+def save_ib_dfs(ib_dir, ib):
 
     generate_ib_execution_df(ib) # save in the global_state
 
@@ -103,7 +103,7 @@ def save_ib_dfs(portfolio_dir, ib):
 
         df = getattr(global_state, df_name, None)
         if df is not None:
-            file_path = f"{portfolio_dir}/{file_name}"
+            file_path = f"{ib_dir}/{file_name}"
             df_utils.save_df_to_csv_a_tabular(df, file_path=file_path, mode='a')
 
     return
