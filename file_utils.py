@@ -24,7 +24,11 @@ def create_a_backup(file_path):
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     if os.path.exists(src):
-        dst = f"{src}.{timestamp}.bak"
+        dir = "/".join(src.split("/")[:-1]) # extract dir
+        filename = src.split("/")[-1]
+        dir = f"{dir}/backup" # backup folder
+        os.makedirs(dir, exist_ok=True)
+        dst = f"{dir}/{filename}.{timestamp}.bak"
         shutil.copy(src, dst)
         logger.info(f"Backup created: {dst}")
 
