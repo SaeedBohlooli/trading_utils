@@ -40,7 +40,8 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
     tp.transmit = False
     tp.tif = 'GTC'
     tp.outsideRth = True
-    tp.orderRef = f'{order_ref}-TP'
+    tp_order_ref = f'{order_ref}-TP'
+    tp.orderRef = tp_order_ref
     logger.warning(f"tp: {tp}")
 
     # Stop loss (stop sell)
@@ -50,7 +51,8 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
     sl.outsideRth = True
     sl.tif = 'GTC'
     sl.outsideRth = True
-    sl.orderRef = f'{order_ref}-SL'
+    sl_order_ref = f'{order_ref}-SL'
+    sl.orderRef = sl_order_ref
     logger.warning(f"sl: {sl}")
 
     # Place all 3
@@ -81,13 +83,16 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
         'open_trade_order_id': parent_order_id,
         'open_trade_open_price': 1,
         'open_trade_order_ref' : order_ref,
-        'market_order_sent': True,
-        'market_order_executed': False,
         'open_trade_stop_loss_price': sl_price,
         'open_trade_stop_loss_order_id': sl_order_id,
+        'open_trade_stop_loss_order_ref': sl_order_ref,
         'open_trade_take_profit_price': tp_price,
         'open_trade_take_profit_order_id' : tp_order_id,
-      }
+        'open_trade_take_profit_order_re' : tp_order_ref,
+        'market_order_sent': True,
+        'market_order_executed': False,
+
+    }
 
     logger.info("order sent.. we sleep 1 sec to order get executed ..") # removing sleep will cause issue
     time.sleep(1)
