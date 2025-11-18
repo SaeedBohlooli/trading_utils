@@ -11,6 +11,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import configparser
 from trading_utils import file_utils
+
+logger = logging.getLogger(__name__)
+
+
+def load_csv_file(file_path):
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.DataFrame()
+
+    return df
+
 def cut_df_strating_hour_x_on_last_day(df, cutoff_time="13:00"):
     df = df.copy()
     df['date'] = pd.to_datetime(df['date'])
@@ -71,18 +83,18 @@ def capture_df_starting_hour_x_on_last_day(df, date_f='date', cutoff_time="13:00
     cut_df = df[(mask_day & mask_time)]
     return cut_df
 
-def drop_dupplicates_in_file(file_path, unique_column=None, keep='last'):
+def drop_dupplicates_in_file(file_path, unique_columns=[], keep='last'):
     # Drop dupplicaes
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
-        if unique_column is None:
+        if unique_columns == []:
             df = df.drop_duplicates(keep=f'{keep}')
         else: # has fields ...
-            df = df.drop_duplicates(subset=[f'{unique_column}'], keep=f'{keep}')
+            df = df.drop_duplicates(subset=unique_columns, keep=f'{keep}')
         df.to_csv(file_path, index=False, mode='w')
     return
 
-def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=True, unique_column='unique_id'):
+def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=True, unique_columns=[]):
     # TODO unique_column should be a list
     if len(df) > 0:
 
@@ -91,6 +103,7 @@ def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=T
 
         else:
             # moed is a, check columns
+            logger.debug(f"save_df_to_csv_a_tabular, file_path: {file_path}")
             if os.path.exists(file_path):
                 existing_cols = pd.read_csv(file_path, nrows=0).columns.tolist()
                 # --- Compare with new df columns
@@ -106,11 +119,15 @@ def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=T
 
         df.to_csv(file_path, mode=mode, index=False, header=header)
 
+        # if drop_dupplicates:
+        #     if unique_column != '' and unique_column in df.columns:
+        #         drop_dupplicates_in_file(file_path, unique_column=unique_column)  # 'event'
+        #     else:
+        #         drop_dupplicates_in_file(file_path)  # 'event'
         if drop_dupplicates:
-            if unique_column != '' and unique_column in df.columns:
-                drop_dupplicates_in_file(file_path, unique_column=unique_column)  # 'event'
-            else:
-                drop_dupplicates_in_file(file_path)  # 'event'
+            if unique_columns == [] and 'unique_id' in df.columns: # it is passeD_empty, but uunique_id is there we add it
+                unique_columns = ['unique_id']
+            drop_dupplicates_in_file(file_path, unique_columns=unique_columns)
 
         write_file_in_tabulate(src_file_path=file_path)
     return

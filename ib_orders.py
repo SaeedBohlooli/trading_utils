@@ -79,7 +79,7 @@ def send_market_order_w_sl_tp(ib, side, contract, stop_loss_price, take_profit_p
         'available_quantity': quantity,
         'date': f'{str(date_utils.time_now())}',
         'candle_date': str(candle_date),
-        'open_trade_side': side,
+        'open_trade_side': side, # This  is BUY SELL , not LONG SHORT
         'open_trade_order_id': parent_order_id,
         'open_trade_open_price': 1,
         'open_trade_order_ref' : order_ref,
