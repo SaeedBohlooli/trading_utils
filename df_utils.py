@@ -15,9 +15,14 @@ from trading_utils import file_utils
 logger = logging.getLogger(__name__)
 
 
-def load_csv_file(file_path):
+def load_csv_file(file_path, expected_columns=[]):
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
+        if expected_columns != []:
+            if list(df.columns) != expected_columns:
+                logger.warning("@@@@ The loaded CSV has different columns, so we are returning an emppty DF")
+                df = pd.DataFrame()
+
     else:
         df = pd.DataFrame()
 

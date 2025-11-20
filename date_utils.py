@@ -2,7 +2,7 @@ import datetime
 
 def time_now():
     now_date_time = datetime.datetime.now()
-    return  now_date_time.strftime("%Y-%m-%d %H:%M:%S")
+    return now_date_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def format_yyyymmdd(date_obj):
