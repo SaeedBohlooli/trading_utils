@@ -79,7 +79,19 @@ def get_current_price(ib, contract): #TODO add rety ...
     return current_price
 
 
+
+def generate_fake_spx_price(base=6000.0, volatility=5.0):
+    x = round(base + random.uniform(-volatility, volatility), 2)
+    return round_to_increment(x, 5)
+
+def generate_fake_price(base=100.0, volatility=5.0):
+    return round(base + random.uniform(-volatility, volatility), 2)
+
 def get_current_price_SPX(ib, symbol='SPX'):  # Remy app
+
+    if global_state.ib_config.get('fall_back', '1 == 2'):
+        return generate_fake_spx_price()
+
     spx = Index(symbol='SPX', exchange='CBOE', currency='USD')
     ib.qualifyContracts(spx)
 
