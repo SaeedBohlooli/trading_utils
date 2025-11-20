@@ -101,7 +101,7 @@ def drop_dupplicates_in_file(file_path, unique_columns=[], keep='last'):
 
 def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=True, unique_columns=[]):
     # TODO unique_column should be a list
-    if len(df) > 0:
+    if df is not None and len(df) > 0:
 
         if mode == 'w':
             header = True
