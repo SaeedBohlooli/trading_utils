@@ -7,7 +7,7 @@ import datetime
 from ib_insync import *
 import sys
 import traceback
-
+from trading_utils import *
 sys.path.insert(0, f'../')
 
 logger = logging.getLogger(__name__)

@@ -89,7 +89,7 @@ def generate_fake_price(base=100.0, volatility=5.0):
 
 def get_current_price_SPX(ib, symbol='SPX'):  # Remy app
 
-    if global_state.ib_config.get('fall_back', '1 == 2'):
+    if global_state.ib_config.get('fall_back', False):
         return generate_fake_spx_price()
 
     spx = Index(symbol='SPX', exchange='CBOE', currency='USD')
