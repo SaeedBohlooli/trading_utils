@@ -12,7 +12,7 @@ from trading_utils import config_utils
 logger = logging.getLogger(__name__)
 
 
-def check_health_status(health_status_file_path):
+def check_health_status_from_file(health_status_file_path):
     if not os.path.exists(health_status_file_path):
         print(f"⚠️ Health log not found — application might be down. :{health_status_file_path}")
         return False
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     while True:
         now = datetime.now()
         current_hh_mm_ny = int(now.strftime("%H%M"))
-        is_healthy = check_health_status(health_status_file_path)
+        is_healthy = check_health_status_from_file(health_status_file_path)
         if not is_healthy:
             if app_config.get('health_check',{}).get('send_email', False):
                 if not eval(app_config.get('health_check', {}).get('email_hours', '1 == 2')):
