@@ -68,7 +68,10 @@ def extract_trades_with_prices(df):
 
                     pos += qty
                     total_cost += qty * price
-                    open_price = total_cost / pos  # weighted average
+                    if pos == 0:
+                        open_price = 0
+                    else:
+                        open_price = total_cost / pos  # weighted average
 
                 # -- SELL (reduce or close)
                 elif qty < 0:
