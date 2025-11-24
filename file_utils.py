@@ -22,23 +22,31 @@ def load_json_from_file(file_path):
 def create_a_backup(file_path):
 
     src = file_path
-
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    dir = "/".join(src.split("/")[:-1])  # extract dir
+    dir = extract_dir_from_path(src)
     dir = f"{dir}/backup"  # backup folder
     os.makedirs(dir, exist_ok=True)
 
     if os.path.exists(src):
-        filename = src.split("/")[-1]
+        filename = extract_filename_from_path()
+
         dst = f"{dir}/{filename}.{timestamp}.bak"
         shutil.copy(src, dst)
         logger.info(f"Backup created: {dst}")
 
     src = f"{src}-txt.csv"
     if os.path.exists(src):
-        filename = src.split("/")[-1]
+        filename = extract_filename_from_path()
         dst = f"{dir}/{filename}.{timestamp}.bak"
         shutil.copy(src, dst)
         logger.info(f"Backup created: {dst}")
 
     return
+
+
+def extract_dir_from_path(file_path):
+    dir = "/".join(file_path.split("/")[:-1])  # extract dir
+    return dir
+def extract_filename_from_path(file_path):
+    filename = file_path.split("/")[-1]
+    return filename
