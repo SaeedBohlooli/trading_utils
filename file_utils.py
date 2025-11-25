@@ -50,3 +50,15 @@ def extract_dir_from_path(file_path):
 def extract_filename_from_path(file_path):
     filename = file_path.split("/")[-1]
     return filename
+
+
+def save_a_map_to_file(map, file_path):
+    with open(file_path, 'w') as f:
+        try:
+            logger.info(f"saving at file_path: {file_path}")
+            json.dump(map, f, indent=4)
+            logger.info(f"saving done. ")
+        except Exception as e:
+            # TODO add
+            logger.error(e)
+    return
