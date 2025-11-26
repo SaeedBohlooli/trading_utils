@@ -1,5 +1,5 @@
 import pandas as pd
-application_state = 'not set yet'
+user_input = 'not set yet'
 
 
 ib_on_fill_fill_df = pd.DataFrame()
