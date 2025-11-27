@@ -12,7 +12,8 @@ async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5
     #     return generate_fake_spx_price()
 
     for attempt in range(1, max_retries + 1):
-        spx = Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD')
+        # spx = Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD')
+        spx = Index(symbol='SPX', exchange='CBOE', currency='USD')
         # spx = Contract()
         # spx.conId = 416904
         # spx.secType = "IND"
@@ -109,8 +110,10 @@ async def get_quote_for_contracts(ib, contracts):
     data_list = []
     for t in tickers:
         logger.info(f"get_quote_for_contracts: t.contract: {t.contract}")
+        # t.contract: Option(conId=807843628, symbol='SPX', lastTradeDateOrContractMonth='20251128', strike=6845.0, right='C', multiplier='100', exchange='CBOE', currency='USD', localSymbol='SPXW  251128C06845000', tradingClass='SPXW')
         data = {
             "symbol": t.contract.symbol,
+            "local_symbol": t.contract.localSymbol,
             "expiry": t.contract.lastTradeDateOrContractMonth,
             "strike": t.contract.strike,
             "con_id": t.contract.conId,

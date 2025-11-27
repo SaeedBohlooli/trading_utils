@@ -25,6 +25,7 @@ def send_order(ib, legs, total_quantity, root_symbol, order_ref):
         comboLegs=legs
     )
     order = MarketOrder('BUY', totalQuantity=total_quantity)
+    logger.info(f"TODO {order}")
 
     order.orderRef = order_ref
 
@@ -32,6 +33,7 @@ def send_order(ib, legs, total_quantity, root_symbol, order_ref):
     trade = ib.placeOrder(butterfly, order)
 
     logger.info(f"Order sent ....")
-    logger.info(trade)
+    logger.info(f"trade: {trade}")
+
     return trade
 
