@@ -2,7 +2,7 @@
 Common functionalities
 
 
-
+git clone https://github.com/SaeedBohlooli/trading_utils.git   
 
 cd .\trading_utils\  
 git add .\df_utils.py  
