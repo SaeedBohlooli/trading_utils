@@ -8,7 +8,6 @@ import logging
 import os.path
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import configparser
 from trading_utils import file_utils
 
