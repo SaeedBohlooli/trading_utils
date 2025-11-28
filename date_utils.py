@@ -26,3 +26,24 @@ def next_business_day(start_date=None, offset=1):
         next_day += datetime.timedelta(days=offset + 2)
 
     return next_day
+
+
+def get_hhm_mm_of_last_record(df=None):
+    if df is None or len(df) == 0:
+        return "N/A"
+    return df['date'].iloc[-1].strftime('%H:%M')
+
+
+def get_last_record_hhmm(df=None):
+    if len(df) == 0 or df is None:
+        return -1
+
+    last_record_hh_mm = int(df['date'].iloc[-1].strftime('%H%M'))
+    return int(last_record_hh_mm)
+
+def get_hhmm_int(date_obj):
+    if date_obj is None:  # TOOD check it is idate
+        return -1
+
+    hhmm = int(date_obj.strftime('%H%M'))
+    return hhmm
