@@ -13,3 +13,10 @@ ib_errors_df = pd.DataFrame()
 
 ib_config = {}
 
+
+
+quote_cache = {}
+
+# Optional: define a helper for safe updates
+def update_quote(con_id, data):
+    quote_cache[con_id] = data

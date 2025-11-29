@@ -4,7 +4,13 @@ def time_now():
     now_date_time = datetime.datetime.now()
     return now_date_time.strftime("%Y-%m-%d %H:%M:%S")
 
+def time_now_yyyy_mm_dd_hh_mm():
+    now_date_time = datetime.datetime.now()
+    return now_date_time.strftime("%Y-%m-%d %H:%M")
 
+def time_now_yyyy_mm_dd_hh_mm_ss():
+    now_date_time = datetime.datetime.now()
+    return now_date_time.strftime("%Y-%m-%d %H:%M:%S")
 def format_yyyymmdd(date_obj):
     """
     Convert a datetime.date (or datetime.datetime) to yyyymmdd string.
@@ -23,6 +29,8 @@ def next_business_day(start_date=None, offset=1):
 
     # If Saturday → skip to Monday
     if next_day.weekday() == 5:
-        next_day += datetime.timedelta(days=offset + 2)
+        next_day += datetime.timedelta(days=2)
+    if next_day.weekday() == 6:  # if Sunday → skip to Monday
+        next_day += datetime.timedelta(days=1)
 
     return next_day

@@ -1,7 +1,6 @@
 import logging
 import asyncio
 from trading_utils import *
-from trading_utils import global_state
 from ib_async import *
 import pandas as pd
 logger = logging.getLogger(__name__)
@@ -49,7 +48,13 @@ async def qualify_contracts_v_1(ib, contracts):
     # The asterisk (*) is crucial because it "unpacks" the list, sending each individual contract within the list as a separate argument to the qualifyContractsAsync method. This will resolve the AttributeError because the method will then correctly receive contract objects with an includeExpired attribute, rather than an unprocessable list.
 
     qualified_contracts = await ib.qualifyContractsAsync(*contracts)
-    logger.info(f"qualify_contracts, qualified: {qualified_contracts}")
+    if None in qualified_contracts:
+
+        logger.error(f"@@@@ qualify_contracts, encountered None in qualified_contracts")
+        logger.info(f"qualify_contracts, qualified_contracts: {len(qualified_contracts)} , contracts: {len(contracts)}")
+        logger.info("@@@@ qualify_contracts, qualified:\n" + "\n".join(map(str, qualified_contracts)))
+        logger.info("@@@@ qualify_contracts, contracts:\n" + "\n".join(map(str, contracts)))
+
     return qualified_contracts
 
 
@@ -130,3 +135,104 @@ async def get_quote_for_contracts(ib, contracts):
     logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
 
     return df
+
+
+# This one is subscribing ....
+async def get_quote_for_contracts_ver_2(ib, contracts):
+
+
+    # if global_state.ib_config.get('fall_back', '1 == 2'):
+    #     data_list = []
+    #     for contract in contracts:
+    #         data = {
+    #             "symbol": contract.symbol,
+    #             "expiry": contract.lastTradeDateOrContractMonth,
+    #             "strike": contract.strike,
+    #             "right": contract.right,
+    #             "bid": generate_fake_price(10),
+    #             "ask": generate_fake_price(10),
+    #             "last": generate_fake_price(10),
+    #         }
+    #
+    #         data_list.append(data)
+    #
+    #     df = pd.DataFrame(data_list)
+    #
+    #     logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
+    #
+    #     return df
+
+    logger.info(f"get_quote_for_contracts, calling ib.reqTickers started  ... ")
+    start_time = time.time()
+    tickers = await ib.reqTickersAsync(*contracts)
+    end_time = time.time()
+    run_spend_time = round(end_time - start_time, 2)
+
+    logger.info(f"get_quote_for_contracts, calling ib.reqTickers finished, run_spend_time: {run_spend_time}  ...")
+    # Build DataFrame
+    data_list = []
+    for t in tickers:
+        logger.info(f"get_quote_for_contracts: t.contract: {t.contract}")
+        # t.contract: Option(conId=807843628, symbol='SPX', lastTradeDateOrContractMonth='20251128', strike=6845.0, right='C', multiplier='100', exchange='CBOE', currency='USD', localSymbol='SPXW  251128C06845000', tradingClass='SPXW')
+        data = {
+            "symbol": t.contract.symbol,
+            "local_symbol": t.contract.localSymbol,
+            "expiry": t.contract.lastTradeDateOrContractMonth,
+            "strike": t.contract.strike,
+            "con_id": t.contract.conId,
+            "right": t.contract.right,
+            "bid": t.bid,
+            "ask": t.ask,
+            "last": t.last,
+        }
+
+        data_list.append(data)
+
+    df = pd.DataFrame(data_list)
+
+    logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
+
+    return df
+
+
+
+
+def on_ticker_update(ticker):
+    logger.debug(f"[ib_pricing_async] on_ticker_update: ticker: {ticker.contract.conId}, last: {ticker.last}, bid: {ticker.bid}, ask: {ticker.ask}")
+    c = ticker.contract
+
+    global_state.quote_cache[c.conId] = {
+        "symbol": c.symbol,
+        "local_symbol": c.localSymbol,
+        "expiry": c.lastTradeDateOrContractMonth,
+        "strike": c.strike,
+        "right": c.right,
+        "con_id": c.conId,
+        "bid": ticker.bid,
+        "ask": ticker.ask,
+        "last": ticker.last,
+        "timestamp": date_utils.time_now_yyyy_mm_dd_hh_mm_ss(),
+    }
+
+
+async def subscribe_to_contracts(ib, contracts):
+    """
+    Subscribe once to continuous market data for all given contracts.
+    This is the FAST method: updates come automatically via callbacks.
+    """
+    for c in contracts:
+        # request streaming market data
+        if c is None:
+            logger.error(f"@@@@@@ subscribe_to_contracts: Encountered None contract — skipping contract: {c}")
+            continue
+        ticker = ib.reqMktData(
+            c,
+            genericTickList="",
+            snapshot=False,
+            regulatorySnapshot=False
+        )
+
+        # attach callback
+        ticker.updateEvent += on_ticker_update
+
+    logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
