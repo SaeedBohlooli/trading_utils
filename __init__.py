@@ -12,3 +12,4 @@ from .ib_posttrade import *
 from .ib_utils_async import *
 from .ib_pricing_async import *
 from .ib_orders_async import *
+from .ib_marketdata import *
