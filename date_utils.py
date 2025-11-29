@@ -4,6 +4,11 @@ def time_now():
     now_date_time = datetime.datetime.now()
     return now_date_time.strftime("%Y-%m-%d %H:%M:%S")
 
+def get_current_hhmm_ny():
+    now = datetime.datetime.now() # TODO put local NY time
+    current_hhmm_ny = int(now.strftime("%H%M"))
+    return current_hhmm_ny
+
 def time_now_yyyy_mm_dd_hh_mm():
     now_date_time = datetime.datetime.now()
     return now_date_time.strftime("%Y-%m-%d %H:%M")
