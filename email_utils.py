@@ -4,8 +4,6 @@ import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from utils import miscutils
-
 logger = logging.getLogger(__name__)
 
 

@@ -28,7 +28,7 @@ def create_a_backup(file_path):
     os.makedirs(dir, exist_ok=True)
 
     if os.path.exists(src):
-        filename = extract_filename_from_path()
+        filename = extract_filename_from_path(src)
 
         dst = f"{dir}/{filename}.{timestamp}.bak"
         shutil.copy(src, dst)
@@ -36,7 +36,7 @@ def create_a_backup(file_path):
 
     src = f"{src}-txt.csv"
     if os.path.exists(src):
-        filename = extract_filename_from_path()
+        filename = extract_filename_from_path(src)
         dst = f"{dir}/{filename}.{timestamp}.bak"
         shutil.copy(src, dst)
         logger.info(f"Backup created: {dst}")

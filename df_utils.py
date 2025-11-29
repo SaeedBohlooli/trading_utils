@@ -1,15 +1,14 @@
 import sys
 import time
 from tabulate import tabulate
-sys.path.insert(0, f'../')
-
-
 import logging
 import os.path
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import configparser
+sys.path.insert(0, f'../')
+
+
 from trading_utils import file_utils
 
 logger = logging.getLogger(__name__)
@@ -186,3 +185,15 @@ def move_last_x_to_position_y(df, x, y):
     new_order = first_part + last_x + middle_part
 
     return df[new_order]
+
+
+def convert_column_timezone(df, from_column='date', to_column='date_est', from_zone='UTC', to_zone='America/New_York'):
+    from_column_tmp = from_column + '_tmp'
+    df[from_column_tmp] = pd.to_datetime(df[from_column])
+    df[from_column_tmp] = df[from_column_tmp].dt.tz_localize(from_zone)
+
+    # Convert from UTC to Eastern Time
+    df[to_column] = df[from_column_tmp].dt.tz_convert(to_zone)
+    logger.debug(f"df[-3:].to_markdown():\n {df[-10:].to_markdown()}")
+    df = df.drop(columns=[from_column_tmp])
+    return df

@@ -27,12 +27,21 @@ def load_config(file_path ='config.yaml') -> dict:
 
 
 
-def load_app_config(portfolio_id, config_folder=''):
+def load_app_config(portfolio_id, config_folder='',load_coommon=True):
     if config_folder == '':
         configs_folder = f'../configs'
     logger.info(f"loading app_config ....")
     app_config = load_config(f'{configs_folder}/config-{portfolio_id}.yaml')
     logger.info(f"loaded.")
+    if load_coommon:
+        logger.info(f"loading  common config ....")
+        common_config = load_config(f'{configs_folder}/config-common.yaml')
+        if common_config != None and common_config != {}:
+            app_config.update(common_config)
+            logger.info(f"Common config loaded.")
+        else:
+            logger.warning(f"No common config found. or empty.")
+
     return app_config
 
 
