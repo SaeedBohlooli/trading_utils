@@ -10,14 +10,23 @@ def load_config(file_path ='config.yaml') -> dict:
     config = {}
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
-            config = yaml.safe_load(file)
+            try:
+                config = yaml.safe_load(file)
+            except Exception as e:
+                logger.error(f"@@@@ Error loading YAML config from {file_path}: {e}")
+                config = {}
 
     file_path = file_path.replace('.yaml', '.local.yaml')
 
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
-            local_config = yaml.safe_load(file)
-            if local_config != None:
+            try:
+                local_config = yaml.safe_load(file)
+            except Exception as e:
+                logger.error(f"@@@@ Error loading YAML config from {file_path}: {e}")
+                local_config = {}
+
+            if local_config != None or local_config != {}:
                 config.update(local_config)
 
     logger.info(f"config: {config}")

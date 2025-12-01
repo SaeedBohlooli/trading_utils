@@ -37,3 +37,24 @@ def send_order(ib, legs, total_quantity, root_symbol, order_ref):
 
     return trade
 
+
+
+def generate_order_ref(portfolio_id, event, symbol, side=None, unique_run_number=None, right= None, alias=None):
+    # event: OPEN, CLOSE
+    ev = 'OP' if event == 'OPEN' else 'CL'
+
+    order_ref = f"{portfolio_id}--{symbol}--{ev}"
+
+    if side:
+        order_ref += f"--{side}"
+
+    if right:
+        order_ref += f"--{right}"
+
+    if alias:
+        order_ref += f"--{alias}"
+
+    if unique_run_number:
+        order_ref += f"--{unique_run_number}"
+
+    return order_ref

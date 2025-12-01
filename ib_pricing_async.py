@@ -3,12 +3,13 @@ import asyncio
 from trading_utils import *
 from ib_async import *
 import pandas as pd
+import pandas as pd
 logger = logging.getLogger(__name__)
 import time
 async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5):
     #
-    # if global_state.ib_config.get('fall_back', False):
-    #     return generate_fake_spx_price()
+    if global_state.ib_config.get('fall_back', False):
+        return generate_fake_spx_price()
 
     for attempt in range(1, max_retries + 1):
         # spx = Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD')
@@ -31,13 +32,14 @@ async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5
         price = ticker.last
         if price is not None and not (pd.isna(price) or math.isnan(price)):
             if attempt > 1:
-                logger.warning(f"@@ succefull try after attempt: {attempt}, symbol: {symbol}")
+                logger.warning(f"@@ get_current_price_SPX, succefull try after attempt: {attempt}, symbol: {symbol}")
             return price
         else:
             logger.warning(
-                f"@@@ get_current_price_for_contract,{symbol}, price is nan, try again ... attempt: {attempt}")
+                f"@@@ get_current_price_SPX, {symbol}, price is nan, try again ... attempt: {attempt}")
             await asyncio.sleep(retry_delay)
-        return price
+
+    return price
 
 
 async def qualify_contracts_v_1(ib, contracts):
@@ -200,7 +202,9 @@ async def get_quote_for_contracts_ver_2(ib, contracts):
 def on_ticker_update(ticker):
     logger.debug(f"[ib_pricing_async] on_ticker_update: ticker: {ticker.contract.conId}, last: {ticker.last}, bid: {ticker.bid}, ask: {ticker.ask}")
     c = ticker.contract
-
+    if c is None:
+        logger.warning(f"@@@@ on_ticker_update: Encountered None contract — skipping ticker: {ticker}")
+        return
     global_state.quote_cache[c.conId] = {
         "symbol": c.symbol,
         "local_symbol": c.localSymbol,
@@ -236,3 +240,148 @@ async def subscribe_to_contracts(ib, contracts):
         ticker.updateEvent += on_ticker_update
 
     logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
+    return
+
+
+async def unsubscribe_contract(ib, contract):
+    if contract is None:
+        logger.warning("@@@ [ERROR] unsubscribe_contract: contract is None — skipping")
+        return
+
+    # IBKR-side unsubscribe
+    try:
+        ib.cancelMktData(contract)
+    except Exception as e:
+        logger.warning(f"[WARN] cancelMktData failed: {e}")
+
+    # Remove from cache
+    quote_cache.pop(contract.conId, None)
+
+    logger.warning(f"[ib_pricing_async] UNSUBSCRIBED: {contract.localSymbol} (conId={contract.conId})")
+    #
+    #  I dont think we need to log cache removal here, as it's done above
+
+    # # Remove from local cache
+    # removed = quote_cache.pop(contract.conId, None)
+    # if removed:
+    #     logger.info(
+    #         f"[CACHE REMOVED] {contract.localSymbol} | conId={contract.conId}"
+    #     )
+    # else:
+    #     logger.warning(
+    #         f"[CACHE MISS] Tried removing conId={contract.conId} but it was not found in quote_cache"
+    #     )
+
+
+def find_and_print_invalid_quotes(df):
+    if df is None or len(df) == 0:
+        return df
+
+    invalid_mask = (
+        (df["bid"].isna()) | (df["bid"] == -1) |
+        (df["ask"].isna()) | (df["ask"] == -1)
+    )
+
+    invalid_rows = df.loc[invalid_mask]
+
+    if not invalid_rows.empty:
+        logger.warning(f"@@@ find_and_print_invalid_quotes, Invalid rows (bid or ask is NaN or -1): \n{invalid_rows.to_markdown()}")
+
+    return invalid_rows
+
+def fix_bid_ask_df(df):
+    if df is None or len(df) == 0:
+        return df
+
+    # Last is valid only if NOT -1 and NOT NaN
+    last_valid = (df["last"] != -1) & (~df["last"].isna())
+
+    # Masks for which rows will change
+    mask_bid = (df["bid"] == -1) & last_valid
+    mask_ask = (df["ask"] == -1) & last_valid
+
+    # Combined mask for printing
+    mask_any = mask_bid | mask_ask
+
+    # Print rows BEFORE replacement
+    if mask_any.any():
+        logger.warning(f"@@@ fix_bid_ask_df, Rows to be replaced:\n{df.loc[mask_any].to_markdown()}")
+
+    # Apply replacements
+    df["bid"] = np.where(mask_bid, df["last"], df["bid"])
+    df["ask"] = np.where(mask_ask, df["last"], df["ask"])
+
+    return df
+
+
+
+def fix_bid_ask_with_fallback(df):
+    """
+    IF bid == -1 or NaN:
+        IF last is valid (not -1, not NaN):
+            bid = last
+        ELSE IF ask is valid (not -1, not NaN):
+            bid = ask
+    IF ask == -1 or NaN:
+        IF last is valid:
+            ask = last
+        ELSE IF bid is valid:
+            ask = bid
+
+    :param df:
+    :return:
+    """
+    if df is None or len(df) == 0:
+        return df
+
+    # convenience aliases
+    bid = df["bid"]
+    ask = df["ask"]
+    last = df["last"]
+
+    # Validity masks
+    bid_invalid = bid.isna() | (bid == -1)
+    ask_invalid = ask.isna() | (ask == -1)
+    last_valid = (~last.isna()) & (last != -1)
+
+    ask_valid = (~ask.isna()) & (ask != -1)
+    bid_valid = (~bid.isna()) & (bid != -1)
+
+    logger.warning("@@@@ fix_bid_ask_with_fallback, invalid rows (before fixing)")
+    invalid_rows = df.loc[bid_invalid | ask_invalid]
+    logger.warning(f"\n{invalid_rows.to_markdown()}")
+
+    # -------------------------
+    # FIX BID
+    # -------------------------
+
+    # 1) Replace bid with last if bid invalid and last valid
+    df["bid"] = np.where(bid_invalid & last_valid, last, bid)
+
+    # 2) Replace bid with ask if still invalid and ask valid
+    bid = df["bid"]   # refresh after step 1
+    bid_invalid_after_1 = bid.isna() | (bid == -1)
+    df["bid"] = np.where(bid_invalid_after_1 & ask_valid, ask, bid)
+
+    # -------------------------
+    # FIX ASK
+    # -------------------------
+
+    # 3) Replace ask with last if ask invalid and last valid
+    df["ask"] = np.where(ask_invalid & last_valid, last, ask)
+
+    # 4) Replace ask with bid if still invalid and bid valid
+    ask = df["ask"]   # refresh after step 3
+    ask_invalid_after_1 = ask.isna() | (ask == -1)
+    df["ask"] = np.where(ask_invalid_after_1 & bid_valid, df["bid"], ask)
+
+    logger.info("@@@  INVALID ROWS (AFTER FIXING) ===")
+    invalid_after = df.loc[
+        df["bid"].isna() | (df["bid"] == -1) | df["ask"].isna() | (df["ask"] == -1)
+    ]
+    logger.info(f"\n{invalid_after.to_markdown()}")
+
+    return df
+
+
+
