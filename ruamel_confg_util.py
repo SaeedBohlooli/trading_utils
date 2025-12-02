@@ -32,7 +32,14 @@ def load_app_config(portfolio_id, config_folder=''):
     logger.info(f"loaded.")
     return app_config
 
-
+def load_runtime_config(portfolio_id, config_folder=''):
+    if config_folder == '':
+        configs_folder = f'../configs'
+    file_path = f'{configs_folder}/runtime-config-{portfolio_id}.yaml'
+    logger.info(f"loading runtime_config ....{file_path}")
+    config = load_config(file_path)
+    logger.info(f"loaded.")
+    return config
 
 def update_config_and_save(portfolio_id='', key='', value='', file_path=''):
     if file_path != '':
