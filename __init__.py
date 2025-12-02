@@ -5,7 +5,7 @@ from .config_utils import *
 from .ruamel_confg_util import *
 from .df_utils import *
 from .file_utils import *
-from .indicators_util import *
+from .indicators_finta_util import *
 
 from .ib_utils import *
 from .ib_utils_async import *
@@ -17,7 +17,6 @@ from .ib_posttrade import *
 from .ib_orders_async import *
 from .ib_marketdata import *
 from .ib_marketdata_async import *
-
 
 
 
