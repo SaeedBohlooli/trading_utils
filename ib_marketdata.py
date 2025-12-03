@@ -32,12 +32,14 @@ def get_historical_data (ib, contract, historical_days, time_frame):
 
     return df
 
-def get_historical_data_from_start_date(ib, contract, start_date, historical_days, time_frame, max_retries=3, retry_delay=5):
+                                          # contract, historical_days, time_frame, start_date, max_retries=3, retry_delay=2)
+def get_historical_data_until_end_date(ib, contract=None, end_date='', historical_days=5, time_frame=None, max_retries=3, retry_delay=5):
     for attempt in range(1, max_retries + 1):
         try:
+            logger.info(f"get_historical_data_from_start_date, attempt {attempt}, end_date: {end_date}, historical_days: {historical_days}, time_frame: {time_frame}")
             bars = ib.reqHistoricalData(
                 contract,
-                endDateTime=start_date,
+                endDateTime=end_date,
                 durationStr=historical_days,
                 barSizeSetting=time_frame,
                 whatToShow='TRADES',  # for BTC  'AGGTRADES',
@@ -46,7 +48,7 @@ def get_historical_data_from_start_date(ib, contract, start_date, historical_day
 
             # Create a Pandas dataframe from the historical data
             df = util.df(bars)
-            logger.info(f"get_historical_data_from_start_date, start_date: {start_date}, len(df): {len(df)}")
+            logger.info(f"get_historical_data_from_start_date, end_date: {end_date}, len(df): {len(df)}")
 
             if time_frame != '1 day':
                  # df["date"]=df["date"].dt.tz_convert(None)

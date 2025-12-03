@@ -54,6 +54,19 @@ def load_app_config(portfolio_id, config_folder='',load_coommon=True):
 
     return app_config
 
+def load_runtime_config(portfolio_id, config_folder='',load_coommon=False):
+
+    config = {}
+    if config_folder == '':
+        configs_folder = f'../configs'
+
+    logger.info(f"loading runtime-config  ....")
+    config = load_config(f'{configs_folder}/runtime-config-{portfolio_id}.yaml')
+    config.update(config)
+    logger.info(f"loaded.")
+
+    return config
+
 
 def load_ib_config(file_path):
     if file_path == None:
