@@ -2,6 +2,9 @@
 Common functionalities
 
 
+git submodule add https://github.com/SaeedBohlooli/trading_utils.git  trading_utils
+  
+
 git clone https://github.com/SaeedBohlooli/trading_utils.git   
 
 cd .\trading_utils\  
