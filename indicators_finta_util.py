@@ -57,6 +57,23 @@ FUNCTION_MAP = {
         period_fast=params["fast"],
         signal=params["signal"]
     ),
+    # -------------------------------
+    # lowest
+    # -------------------------------
+    "lowest": lambda df, inputs, **params: lowest(
+        df,
+        col=params["col"],
+        length=params["length"]
+    ),
+
+    # -------------------------------
+    # highest
+    # -------------------------------
+    "highest": lambda df, inputs, **params: highest(
+        df,
+        col=params["col"],
+        length=params["length"]
+    ),
 }
 
 
@@ -111,3 +128,11 @@ def compute_and_add_indicator(df, indicator_config):
         df[out_col] = result[ta_col].rename(None)  # remove source name
 
     return df
+
+
+
+def highest(df, col, length):
+    return df[col].rolling(length).max()
+
+def lowest(df, col, length):
+    return df[col].rolling(length).min()
