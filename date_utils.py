@@ -1,4 +1,8 @@
 import datetime
+import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 def time_now():
     now_date_time = datetime.datetime.now()
@@ -60,3 +64,25 @@ def get_hhmm_int(date_obj):
 
     hhmm = int(date_obj.strftime('%H%M'))
     return hhmm
+
+
+def minutes_since_last_record(df, column_name='date'):
+    try:
+        # Check empty DataFrame
+        if df.empty:
+            logger.warning("DataFrame is empty. Cannot compute time difference.")
+            return None
+
+        last_time = df.iloc[-1][column_name]
+
+        # If conversion failed or is NaT
+        if pd.isna(last_time):
+            logger.warning("Last timestamp is invalid (NaT).")
+            return None
+
+        minutes_passed = (datetime.now() - last_time).total_seconds() / 60
+        return minutes_passed
+
+    except Exception as e:
+        logger.error(f"Error in minutes_since_last_record: {e}", exc_info=True)
+        return None
