@@ -14,6 +14,7 @@ from .ib_pricing import *
 from .ib_pricing_async import *
 from .ib_orders import *
 from .ib_positions import *
+from .ib_positions_async import *
 from .ib_posttrade import *
 from .ib_orders_async import *
 from .ib_marketdata import *
