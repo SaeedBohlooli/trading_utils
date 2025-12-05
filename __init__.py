@@ -7,6 +7,7 @@ from .ruamel_confg_util import *
 from .df_utils import *
 from .file_utils import *
 from .indicators_finta_util import *
+from .request_router import *
 
 from .ib_utils import *
 from .ib_utils_async import *

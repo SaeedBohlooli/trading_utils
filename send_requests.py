@@ -3,7 +3,7 @@ print('# ###########################')
 
 
 host= '127.0.0.1'
-port = 5106
+port = 5102
 if True:
     d = {
         "request_type": "close_position",

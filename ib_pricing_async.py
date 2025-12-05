@@ -6,7 +6,7 @@ import pandas as pd
 import pandas as pd
 logger = logging.getLogger(__name__)
 import time
-async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5):
+async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
     #
     if global_state.ib_config.get('fall_back', False):
         return generate_fake_spx_price()
@@ -196,6 +196,71 @@ async def get_quote_for_contracts_ver_2(ib, contracts):
 
     return df
 
+
+
+async def subscribe_symbol_once(ib, symbol, secType="STK", exchange="SMART", currency="USD"):
+    """
+    General purpose subscription for any stock/index/future/crypto.
+    Example: TSLA, AMD, SPX, NDX, MSFT, AAPL, NVDA
+    """
+
+    if secType == "IND":
+        contract = Index(symbol=symbol, exchange=exchange, currency=currency)
+    elif secType == "STK":
+        contract = Stock(symbol, exchange, currency)
+    elif secType == "FUT":
+        # You can refine this later
+        contract = Future(symbol=symbol, exchange=exchange, currency=currency)
+    else:
+        raise Exception(f"Unsupported secType: {secType}")
+
+    details = await ib.qualifyContractsAsync(contract)
+
+    logger.info(f"[SUBSCRIBE], qualified contract: {symbol} details: {details}")
+
+    qualified = details[0]  # this is already a Contract (Index/Stock/etc.)
+    con_id = qualified.conId
+
+    logger.info(f"[SUBSCRIBE] {symbol} qualified with conId={con_id}")
+
+    ticker = ib.reqMktData(contract, "", False, False)
+    ticker.updateEvent += on_ticker_update
+
+    # store mappings
+    global_state.symbol_to_conid[symbol] = con_id
+    global_state.conid_to_symbol[con_id] = symbol
+
+    return ticker
+
+def get_latest_price(symbol, fallback=True):
+    """
+    Returns best available price (last > bid > ask) for any subscribed symbol.
+    """
+    con_id = global_state.symbol_to_conid.get(symbol)
+
+    if con_id is None:
+        logger.warning(f"@@ get_latest_price: Symbol {symbol} not subscribed")
+        return None
+
+    q = global_state.quote_cache.get(con_id)
+    if q is None:
+        logger.warning(f"@@ get_latest_price: No quote yet for {symbol}")
+        return None
+
+    last = q.get("last")
+    bid  = q.get("bid")
+    ask  = q.get("ask")
+
+    # Best price logic
+    if valid(last): return last
+    if valid(bid): return bid
+    if valid(ask): return ask
+
+    return None
+
+
+def valid(x):
+    return x is not None and not pd.isna(x)
 
 
 

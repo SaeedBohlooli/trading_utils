@@ -14,7 +14,8 @@ ib_errors_df = pd.DataFrame()
 ib_config = {}
 
 
-
+symbol_to_conid = {}        # Maps “SPX” → 416904
+conid_to_symbol = {}        # Reverse lookup
 quote_cache = {}
 
 # Optional: define a helper for safe updates
