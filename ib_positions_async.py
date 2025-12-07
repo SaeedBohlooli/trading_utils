@@ -1,9 +1,11 @@
+import asyncio
 import sys
 from ib_async import *
 import logging
 sys.path.insert(0, f'../')
 logger = logging.getLogger(__name__)
-from trading_utils import date_utils
+from trading_utils import *
+from trading_utils import ib_posttrade
 
 def has_open_option_positions(ib, symbol, expiry): #TODO need to moved ...
     # Get all current positions
@@ -89,3 +91,101 @@ def convert_positions_to_dict(ib):
         }
         out.append(d)
     return out
+
+
+
+async def close_position_async(ib, symbol, position_side=None, qty_to_close=None, order_ref= None):
+    """
+    Close your existing position for the given symbol.
+    - If long → send SELL
+    - If short → send BUY
+    """
+
+    # --- Step 1: get open positions
+    positions = ib.positions()
+
+    for pos in positions:
+        if pos.contract.symbol != symbol:
+            continue
+
+        position_qty = pos.position
+        if position_qty == 0:
+            logger.info(f"close_position_async, No open position to close for {symbol}")
+            return None
+
+        # Determine closing side
+        action = "SELL" if position_qty > 0 else "BUY"
+
+        if qty_to_close is not None:
+            qty_to_close = min(abs(position_qty), qty_to_close)
+        else:
+            qty_to_close = abs(position_qty)
+
+
+
+        logger.info(f"close_position_async, Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty})")
+
+        # Create a market order
+        order = Order(
+            action=action,
+            orderType="MKT",
+            totalQuantity=qty_to_close
+        )
+        order.tif = 'GTC'  # Good Till Cancelled
+        if order_ref is not None:
+            order.orderRef = order_ref
+
+        pos.contract.exchange = "SMART"  # Ensure exchange is set
+        # Place order
+        trade = ib.placeOrder(pos.contract, order)
+        # trade = ib.placeOrder(contract, order)
+        trade.fillEvent += ib_posttrade.on_fill
+        logger.info(f"close_position_async, Order sent ....")
+        logger.info(f"close_position_async, trade: {trade}")
+
+        return True
+
+    logger.info(f"close_position_async, No position found for symbol={symbol}")
+    return None
+
+
+async def close_all_open_position_async(ib, order_ref=None): # TODO use above method ...
+
+
+    # --- Step 1: get open positions
+    positions = ib.positions()
+
+    for pos in positions:
+
+        position_qty = pos.position
+        if position_qty == 0:
+            logger.info(f"close_all_open_position_async, No open position to close")
+            continue
+        # Determine closing side
+        action = "SELL" if position_qty > 0 else "BUY"
+
+        qty_to_close = abs(position_qty)
+
+        # Create a market order
+        order = Order(
+            action=action,
+            orderType="MKT",
+            totalQuantity=qty_to_close
+        )
+        order.tif = 'GTC'  # Good Till Cancelled
+        if order_ref is not None:
+            order_ref = order_ref.replace("#symbol#", pos.contract.symbol)
+            order.orderRef = order_ref
+
+        pos.contract.exchange = "SMART"  # Ensure exchange is set
+        # Place order
+        trade = ib.placeOrder(pos.contract, order)
+        # trade = ib.placeOrder(contract, order)
+        trade.fillEvent += ib_posttrade.on_fill
+        logger.info(f"close_position_async, Order sent ....")
+        logger.info(f"close_position_async, trade: {trade}")
+
+        asyncio.wait(0.5) # wait a bit before sending next order
+
+
+    return True
