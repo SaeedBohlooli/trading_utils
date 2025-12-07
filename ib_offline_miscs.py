@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, f'../')
 from trading_utils import df_utils
 from trading_utils import ib_posttrade
-
+from trading_utils import *
 
 def polish_executions_df(df):
 
@@ -136,6 +136,9 @@ def do_y(df):
 
 def orchestrate(portfolio_id='p250'):
     ib_dir = f'../../portfolios/ib/{portfolio_id}'
+    ib_pnl_dir = f'../../portfolios/ib-pnl/{portfolio_id}'
+
+
 
     executions_df = ib_posttrade.load_ib_df(ib_dir, 'ib_on_fill_fill_df')
     executions_df = polish_executions_df(executions_df)
@@ -152,6 +155,9 @@ def orchestrate(portfolio_id='p250'):
     # TODO debug ,,,
     #merged_df = df_utils.capture_df_starting_hour_x_on_last_day(merged_df, 'execution_time', '00:00')
     trades_w_prices_df = extract_trades_with_prices(merged_df)
+    
+    
+    df_utils.save_df_to_csv_a_tabular(trades_w_prices_df, file_path=)
 
     print('--------------------------')
     print(f"trades_w_prices_df \n{trades_w_prices_df[0:].to_markdown()}")
