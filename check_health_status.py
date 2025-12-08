@@ -102,7 +102,7 @@ if __name__ == "__main__":
                         subject = f"{portfolio_id} is not healthy"
                         body = f"Hello, <br><br>Application in {portfolio_id} is not healthy.  <br> Check it out ..."
 
-                        email_utils.send_email(email_recipients, subject, body=body)
+                        email_utils.send_email(to_emails=email_recipients, subject=subject, body=body)
 
         print(f'sleeping {portfolio_id} ....')
         time.sleep(1 * 60)
