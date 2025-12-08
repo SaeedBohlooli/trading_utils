@@ -100,7 +100,7 @@ if __name__ == "__main__":
                         email_recipients = app_config.get('health_check',{}).get('email_recipients')
                         # subject = app_config.get('health_check',{}).get('email_subject', f'{portfolio_id} is not healthy' )
                         subject = f"{portfolio_id} is not healthy"
-                        body = f"Hello, <br\><br\>Application in {portfolio_id} is not healthy.  <br\> Check it out ..."
+                        body = f"Hello, <br><br>Application in {portfolio_id} is not healthy.  <br> Check it out ..."
 
                         email_utils.send_email(email_recipients, subject, body=body)
 

@@ -3,9 +3,11 @@ import asyncio
 from trading_utils import *
 from ib_async import *
 import pandas as pd
-import pandas as pd
 logger = logging.getLogger(__name__)
 import time
+from trading_utils import date_utils
+from trading_utils import global_state
+
 async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
     #
     if global_state.ib_config.get('fall_back', False):
@@ -303,6 +305,11 @@ async def subscribe_to_contracts(ib, contracts):
 
         # attach callback
         ticker.updateEvent += on_ticker_update
+
+        symbol = c.localSymbol
+        con_id = c.conId
+        global_state.symbol_to_conid[symbol] = con_id
+        global_state.conid_to_symbol[con_id] = symbol
 
     logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
     return
