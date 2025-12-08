@@ -26,7 +26,7 @@ async def create_ib_async(ip="127.0.0.1", port=7497, client_id=1, retry_delay=3)
                 logger.warning("IBKR connect returned but not connected — retrying.")
 
         except Exception as e:
-            logger.error(f"IBKR connect failed: {e}. Retrying in {retry_delay} seconds.")
+            logger.error(f"@@@ IBKR connect failed: {e}. Retrying in {retry_delay} seconds.")
 
         # Wait before retrying
         await asyncio.sleep(retry_delay)

@@ -7,7 +7,7 @@ from email.mime.text import MIMEText
 logger = logging.getLogger(__name__)
 
 
-def send_email(to_emails, subject, body):
+def send_email(to_emails=None, subject=None, body=None):
     logger.info(f'to_emails: {to_emails} ')
     logger.info(f'body: {body} ')
     logger.info(f'subject: {subject} ')

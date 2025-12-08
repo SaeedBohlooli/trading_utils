@@ -41,7 +41,7 @@ def send_order(ib, legs, total_quantity, root_symbol, order_ref):
 
 
 
-def generate_order_ref(portfolio_id, event, symbol, side=None, unique_run_number=None, right= None, alias=None):
+def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_run_number=None, right= None, alias=None):
     # event: OPEN, CLOSE
     ev = 'OP' if event == 'OPEN' else 'CL'
 
