@@ -80,9 +80,9 @@ def minutes_since_last_record(df, column_name='date'):
             logger.warning("Last timestamp is invalid (NaT).")
             return None
 
-        minutes_passed = (datetime.now() - last_time).total_seconds() / 60
+        minutes_passed = (datetime.datetime.now() - last_time).total_seconds() / 60
         return minutes_passed
 
     except Exception as e:
-        logger.error(f"Error in minutes_since_last_record: {e}", exc_info=True)
+        logger.error(f"TODO Error in minutes_since_last_record: {e}", exc_info=True)
         return None
