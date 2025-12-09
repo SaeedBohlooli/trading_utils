@@ -58,7 +58,7 @@ def get_position_qty(ib, symbol):
 def convert_positions_to_dict(ib):
     out = []
     for p in ib.positions():
-        logger.debug(f"convert_positions_to_dict: Processing position: {p}")
+        logger.info(f"convert_positions_to_dict: Processing position: {p}")
         sym = p.contract.symbol
         d = {
             "symbol": sym,
@@ -93,7 +93,7 @@ def convert_positions_to_dict(ib):
     return out
 
 
-
+# TODO change to close_position_by_symbiol
 async def close_position_async(ib, symbol, position_side=None, qty_to_close=None, order_ref= None):
     """
     Close your existing position for the given symbol.
@@ -148,6 +148,62 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
     logger.info(f"close_position_async, No position found for symbol={symbol}")
     return None
 
+def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None):
+    # TODO check side to make sure we are closing correctly ...
+    # THIS IS VERY IMPORTANT TO AVOID MISTAKES
+    """
+    Close your existing position for the given symbol.
+    - If long → send SELL
+    - If short → send BUY
+    """
+    if con_id is None:
+        return
+    # --- Step 1: get open positions
+    positions = ib.positions()
+
+    for pos in positions:
+        if pos.contract.conId != con_id:
+            continue
+
+        position_qty = pos.position
+        if position_qty == 0:
+            logger.info(f"close_position_by_con_id, No open position to close for con_id: {con_id}")
+            return None
+
+        # Determine closing side
+        action = "SELL" if position_qty > 0 else "BUY"
+
+        if qty_to_close is not None:
+            qty_to_close = min(abs(position_qty), qty_to_close)
+        else:
+            qty_to_close = abs(position_qty)
+
+
+        logger.info(f"close_position_by_con_id, Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty})")
+
+        # Create a market order
+        order = Order(
+            action=action,
+            orderType="MKT",
+            totalQuantity=qty_to_close
+        )
+        order.tif = 'GTC'  # Good Till Cancelled
+        if order_ref is not None:
+            order.orderRef = order_ref
+
+        pos.contract.exchange = "SMART"  # Ensure exchange is set
+
+        # Place order
+        trade = ib.placeOrder(pos.contract, order)
+        trade.fillEvent += ib_posttrade.on_fill
+        logger.info(f"close_position_by_con_id, Order sent ....")
+        logger.info(f"close_position_by_con_id, trade: {trade}")
+
+        return True
+
+    logger.info(f"close_position_by_con_id, No position found for symbol={symbol}")
+    return None
+
 
 async def close_all_open_position_async(ib, order_ref=None): # TODO use above method ...
 
@@ -159,7 +215,7 @@ async def close_all_open_position_async(ib, order_ref=None): # TODO use above me
 
         position_qty = pos.position
         if position_qty == 0:
-            logger.info(f"close_all_open_position_async, No open position to close")
+            logger.debug(f"close_all_open_position_async, No open position to close")
             continue
         # Determine closing side
         action = "SELL" if position_qty > 0 else "BUY"
