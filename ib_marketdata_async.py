@@ -45,7 +45,7 @@ async def get_stock_historical_data(
     if duration is None:
         duration = DEFAULT_DURATION_MAP[time_frame]
 
-    use_cache = True
+    use_cache = False
     if use_cache:
         contract = await ib_contract.get_cached_contract(ib, symbol)
     else:
