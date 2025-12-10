@@ -310,6 +310,7 @@ async def subscribe_to_contracts(ib, contracts):
         con_id = c.conId
         global_state.symbol_to_conid[symbol] = con_id
         global_state.conid_to_symbol[con_id] = symbol
+        logger.info(f"[ib_pricing_async] SUBSCRIBED: {symbol} (conId={con_id})")
 
     logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
     return

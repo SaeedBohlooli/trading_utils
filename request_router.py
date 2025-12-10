@@ -31,14 +31,14 @@ def fetch_user_input(app_config, application_state):
 
 def remove_request(request_id, app_config, application_state):
     logger.info(f"remove_request called with request_id: {request_id}")
-    logger.info(f"@@@@@  TODO implement remove_request function ")
+    #logger.info(f"@@@@@  TODO implement remove_request function ")
 
 
 def remove_request(request_id, app_config, application_state):
     logger.info(f"remove_request called with request_id: {request_id}")
-    logger.info(f"@@@@@  TODO implement remove_request function ")
+    #logger.info(f"@@@@@  TODO implement remove_request function ")
 
 
 def mark_user_request_as_processed(app_config, application_state, user_request):
     logger.info(f"mark_user_request_as_processed called with request_id: {user_request}")
-    logger.info(f"@@@@@  TODO implement remove_request function ")
+    #logger.info(f"@@@@@  TODO implement remove_request function ")
