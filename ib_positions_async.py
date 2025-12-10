@@ -94,6 +94,8 @@ def convert_positions_to_dict(ib):
 
 
 # TODO change to close_position_by_symbiol
+# TODO Thisis very dangerous. bcs for SPX options, will close all positions ...
+# TODO need to check type of contract ...
 async def close_position_async(ib, symbol, position_side=None, qty_to_close=None, order_ref= None):
     """
     Close your existing position for the given symbol.
@@ -105,6 +107,9 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
     positions = ib.positions()
 
     for pos in positions:
+        logger.info(f"@@@ need to check symbol tyope.  FIXMEEEEEEEEEE .... close_position_async, Checking position: {pos}  {pos.contract} ")
+        # for XPX it will not go based on the expiry or stike. ...
+
         if pos.contract.symbol != symbol:
             continue
 

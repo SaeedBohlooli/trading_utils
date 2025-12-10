@@ -1,3 +1,4 @@
+import pytz
 import datetime
 import pandas as pd
 import logging
@@ -66,7 +67,7 @@ def get_hhmm_int(date_obj):
     return hhmm
 
 
-def minutes_since_last_record(df, column_name='date'):
+def seconds_passed_since_last_record(df, column_name='date'):
     try:
         # Check empty DataFrame
         if df.empty:
@@ -79,9 +80,10 @@ def minutes_since_last_record(df, column_name='date'):
         if pd.isna(last_time):
             logger.warning("Last timestamp is invalid (NaT).")
             return None
-
-        minutes_passed = (datetime.datetime.now() - last_time).total_seconds() / 60
-        return minutes_passed
+        now = datetime.datetime.now(pytz.timezone("America/New_York"))
+        logger.info(f"seconds_passed_since_last_record, Current time (NY): {now}, Last record time: {last_time}")
+        seconds_passed = (now - last_time).total_seconds()
+        return seconds_passed
 
     except Exception as e:
         logger.error(f"TODO Error in minutes_since_last_record: {e}", exc_info=True)

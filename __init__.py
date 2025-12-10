@@ -23,6 +23,7 @@ from .ib_orders_async import *
 from .ib_marketdata import *
 from .ib_marketdata_async import *
 from .ib_account import *
+from .ib_contract import *
 
 
 # from .logging_utils import *

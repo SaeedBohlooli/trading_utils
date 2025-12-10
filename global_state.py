@@ -21,3 +21,9 @@ quote_cache = {}
 # Optional: define a helper for safe updates
 def update_quote(con_id, data):
     quote_cache[con_id] = data
+
+# ----------------------------------------------------
+# GLOBAL contract cache for historical / live requests
+# ----------------------------------------------------
+contract_cache = {}     # symbol -> fully qualified contract object
+
