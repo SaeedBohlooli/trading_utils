@@ -2,6 +2,8 @@ import asyncio
 import pandas as pd
 from ib_async import *
 import logging
+from trading_utils import ib_contract
+
 logger = logging.getLogger(__name__)
 
 BAR_SIZE_MAP = {
@@ -27,6 +29,7 @@ async def get_stock_historical_data(
     duration: str | None = None,     # <--- optional
     max_retries: int = 5,
     retry_delay: float = 2.0,
+    what_to_show: str = "TRADES",
 ):
     """
     Fetch historical data ending at `end_date` (optional)
@@ -42,9 +45,14 @@ async def get_stock_historical_data(
     if duration is None:
         duration = DEFAULT_DURATION_MAP[time_frame]
 
+    use_cache = True
+    if use_cache:
+        contract = await ib_contract.get_cached_contract(ib, symbol)
+    else:
+        logger.info(f"get_stock_historical_data: Caching disabled.")
+        contract = Stock(symbol, "SMART", "USD")
 
     # Prepare contract
-    contract = Stock(symbol, "SMART", "USD")
     logger.info(f"Fetching historical data for {symbol}, timeframe: {time_frame}, duration: {duration}, end_date: {end_date}, contract: {contract}")
     # await ib.qualifyContractsAsync(contract)
 
@@ -64,8 +72,8 @@ async def get_stock_historical_data(
                 endDateTime=endDateTime,   # <--- this is the cutoff
                 durationStr=duration,         # <--- goes backwards from endDate
                 barSizeSetting=ib_timeframe,
-                whatToShow="TRADES",  # or 'MIDPOINT', 'ASK', 'BID', 'ADJUSTED_LAST'
-                useRTH=True, # Use Regular Trading Hours
+                whatToShow=what_to_show, # or 'MIDPOINT', 'ASK', 'BID', 'ADJUSTED_LAST'. TRADES is typical for stocks but is slowest. go for MIDPOINT for faster data if no need to bars and volume
+                useRTH=True, # Use Regular Trading Hours # useRTH=True = IB trims bars, extra server work → slower.
                 keepUpToDate=False,
             )
             break  # success
