@@ -1,4 +1,4 @@
-from ib_async import IB, Contract, Stock
+from ib_async import IB, Contract, Stock, Option
 import logging
 from trading_utils import global_state
 
@@ -42,3 +42,16 @@ async def get_cached_contract(ib: IB, symbol: str) -> Contract:
     )
 
     return qualified_contract
+
+
+
+def create_option_contract(symbol=None, expiry=None,strike=None, right=None, trading_class=None, exchange=None):
+    contract = Option(
+        symbol=symbol,
+        lastTradeDateOrContractMonth=expiry,
+        strike=strike,
+        right=right,
+        exchange=exchange,
+        tradingClass=trading_class
+    )
+    return contract

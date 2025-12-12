@@ -272,6 +272,10 @@ def on_ticker_update(ticker):
     if c is None:
         logger.warning(f"@@@@ on_ticker_update: Encountered None contract — skipping ticker: {ticker}")
         return
+
+    if ticker.contract.conId in [822548126]: # debug holder ...
+        logger.debug(f"[ib_pricing_async] on_ticker_update: ticker: {ticker.contract.conId}, last: {ticker.last}, bid: {ticker.bid}, ask: {ticker.ask}")
+
     global_state.quote_cache[c.conId] = {
         "symbol": c.symbol,
         "local_symbol": c.localSymbol,
@@ -310,12 +314,20 @@ async def subscribe_to_contracts(ib, contracts):
         con_id = c.conId
         global_state.symbol_to_conid[symbol] = con_id
         global_state.conid_to_symbol[con_id] = symbol
+        logger.info(f"[ib_pricing_async] SUBSCRIBED: {symbol} (conId={con_id})")
 
     logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
     return
 
 
-async def unsubscribe_contract(ib, contract):
+def get_all_quotes_as_df():
+    quotes = global_state.quote_cache
+    if quotes == {}:
+        return pd.DataFrame()  # empty
+    df = pd.DataFrame(list(quotes.values()))  #  {con_id: {}}
+    return df
+
+async def XXXXunsubscribe_contract(ib, contract):
     if contract is None:
         logger.warning("@@@ [ERROR] unsubscribe_contract: contract is None — skipping")
         return
@@ -419,9 +431,10 @@ def fix_bid_ask_with_fallback(df):
     ask_valid = (~ask.isna()) & (ask != -1)
     bid_valid = (~bid.isna()) & (bid != -1)
 
-    logger.warning("@@@@ fix_bid_ask_with_fallback, invalid rows (before fixing)")
+
     invalid_rows = df.loc[bid_invalid | ask_invalid]
-    logger.warning(f"\n{invalid_rows.to_markdown()}")
+    if len(invalid_rows) > 0:
+        logger.warning(f"@@@@ fix_bid_ask_with_fallback, invalid rows (before fixing) \n{invalid_rows.to_markdown()}")
 
     # -------------------------
     # FIX BID
@@ -447,13 +460,37 @@ def fix_bid_ask_with_fallback(df):
     ask_invalid_after_1 = ask.isna() | (ask == -1)
     df["ask"] = np.where(ask_invalid_after_1 & bid_valid, df["bid"], ask)
 
-    logger.info("@@@  INVALID ROWS (AFTER FIXING) ===")
     invalid_after = df.loc[
         df["bid"].isna() | (df["bid"] == -1) | df["ask"].isna() | (df["ask"] == -1)
     ]
-    logger.info(f"\n{invalid_after.to_markdown()}")
+    if len(invalid_after) == 0:
+        logger.info("All invalid rows have been fixed.")
+    else:
+        logger.info("@@@ invalid rows (after fixing) ===")
+        logger.info(f"\n{invalid_after.to_markdown()}")
 
     return df
 
 
+
+async def get_active_subscriptions(ib):
+    """
+    Returns a list of active ticker subscriptions (symbols + conIds)
+    from the ib_async engine.
+    """
+    # ib.tickers() is safe to call anytime — it shows all active reqMktData streams
+    tickers = ib.tickers()
+
+    active = []
+    for t in tickers:
+        contract = t.contract
+        symbol = getattr(contract, "localSymbol", None)
+        con_id  = getattr(contract, "conId", None)
+
+        active.append({
+            "symbol": symbol,
+            "conId": con_id
+        })
+
+    return active
 
