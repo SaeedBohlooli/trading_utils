@@ -107,6 +107,20 @@ def save_ib_dfs(ib_dir, ib):
             df_utils.save_df_to_csv_a_tabular(df, file_path=file_path, mode='a')
 
     return
+
+async def save_ib_dfs_async(ib_dir, ib):
+
+    await generate_ib_execution_df_async(ib) # save in the global_state
+
+    for df_name, file_name in df_file_map.items():
+
+        df = getattr(global_state, df_name, None)
+        if df is not None:
+            file_path = f"{ib_dir}/{file_name}"
+            df_utils.save_df_to_csv_a_tabular(df, file_path=file_path, mode='a')
+
+    return
+
 def generate_ib_execution_df(ib):
     # IB has only for 24 hrours ... so we need to save it ofter ...
 
@@ -117,6 +131,28 @@ def generate_ib_execution_df(ib):
         time=yesterday.strftime('%Y%m%d %H:%M:%S')  # format: YYYYMMDD HH:MM:SS
     )
     execs = ib.reqExecutions(exec_filter)
+    i = 0
+
+    for trade in execs:
+        i = i + 1
+        if i < 2:
+            logger.debug(f"generate_ib_execution_df(), trade: {trade}")
+
+        flatten_dic = flatten(trade)
+        logger.debug(f"generate_ib_execution_df, flatten :{flatten_dic}")
+        global_state.ib_execution_df = pd.concat([global_state.ib_execution_df, pd.DataFrame([flatten_dic])], ignore_index=True)
+    return global_state.ib_execution_df
+
+async def generate_ib_execution_df_async(ib):
+    # IB has only for 24 hrours ... so we need to save it ofter ...
+
+    now = datetime.datetime.now()
+    yesterday = now - datetime.timedelta(days=3)
+
+    exec_filter = ExecutionFilter(
+        time=yesterday.strftime('%Y%m%d %H:%M:%S')  # format: YYYYMMDD HH:MM:SS
+    )
+    execs = await ib.reqExecutions(exec_filter)
     i = 0
 
     for trade in execs:
