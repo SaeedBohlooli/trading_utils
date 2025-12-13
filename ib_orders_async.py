@@ -6,6 +6,10 @@ import time
 import math
 import pandas as pd
 import pprint
+from ib_insync import IB
+from trading_utils import date_utils
+import logging
+
 sys.path.insert(0, f'../')
 
 from trading_utils import ib_utils
@@ -109,3 +113,188 @@ async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", o
 
     logger.info(f"Final status: {trade.orderStatus.status}, order_ref: {order_ref}")
     return trade
+
+
+
+async def get_open_orders(ib: IB):
+    # Ensures IB sends all open orders
+    await ib.reqOpenOrders()
+
+    # This returns Trade objects
+    open_trades = ib.trades()
+
+    # Filter only open / working orders
+
+    return open_trades
+
+
+
+logger = logging.getLogger(__name__)
+
+async def convert_open_orders_to_dict(ib: IB):
+    out = []
+
+    # Force IB to send all open orders
+    await ib.reqOpenOrdersAsync()
+
+    for t in ib.trades():
+        status = t.orderStatus.status
+
+        # # Keep only active orders
+        if status  in ("Cancelled"):
+            logger.info(f"convert_open_orders_to_dict: Skipping orderId={t.order.orderId} with status={status}")
+            continue
+
+        o = t.order
+        c = t.contract
+
+        logger.info(f"convert_open_orders_to_dict: Processing orderId={o.orderId}")
+        logger.info(f"convert_open_orders_to_dict:   status={status}, action={o.action}, qty={o.totalQuantity}, filled={t.orderStatus.filled}, remaining={t.orderStatus.remaining}, limit_price={o.lmtPrice}, aux_price={o.auxPrice}")
+
+        d = {
+            # --------------------
+            # Identity
+            # --------------------
+            "order_id": o.orderId,
+            "perm_id": o.permId,
+            "order_ref": o.orderRef,
+            "client_id": o.clientId,
+            "account": o.account,
+
+            # --------------------
+            # Contract
+            # --------------------
+            "symbol": c.symbol,
+            "local_symbol": getattr(c, "localSymbol", None),
+            "contract_id": c.conId,
+            "sec_type": c.secType,
+            "exchange": c.exchange,
+
+            # --------------------
+            # Order details
+            # --------------------
+            "action": o.action,                     # BUY / SELL
+            "order_type": o.orderType,              # LMT / MKT / STP
+            "qty": o.totalQuantity,
+            "filled_qty": t.orderStatus.filled,
+            "remaining_qty": t.orderStatus.remaining,
+            "limit_price": o.lmtPrice,
+            "aux_price": o.auxPrice,
+            "tif": o.tif,
+
+            # --------------------
+            # Status
+            # --------------------
+            "status": status,                       # Submitted / PreSubmitted
+            "why_held": t.orderStatus.whyHeld,
+
+            # --------------------
+            # Derived fields
+            # --------------------
+            "side": "buy" if o.action == "BUY" else "sell",
+
+            "is_working": status in ("Submitted", "PreSubmitted"),
+            "is_filled": t.orderStatus.remaining == 0,
+            "remaining": t.orderStatus.remaining,
+
+            # --------------------
+            # Engine / routing
+            # --------------------
+            "last_update": date_utils.time_now_yyyy_mm_dd_hh_mm_ss(),
+            # "cancel_requested": False,
+            # "cancel_request_id": None,
+
+            # --------------------
+            # Future usage
+            # --------------------
+            "tags": [],        # ["entry", "exit", "hedge"]
+            "metadata": {},    # strategy_id, portfolio_id, model_price, etc.
+        }
+
+        out.append(d)
+
+    return out
+
+
+# trading_utils/ib_orders_async.py
+
+from ib_insync import IB
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def cancel_open_order(ib: IB, order_id: int) -> bool:
+    """
+    Cancel a single open order by orderId.
+    Returns True if cancel request was sent.
+    """
+    for t in ib.trades():
+        if t.order.orderId == order_id:
+            logger.info(f"[CANCEL] Sending cancel for orderId={order_id}")
+            ib.cancelOrder(t.order)
+            return True
+
+    logger.warning(f"[CANCEL] orderId={order_id} not found")
+    return False
+
+
+async def cancel_all_open_orders(ib: IB) -> int:
+    """
+    Cancel all active open orders.
+    Returns number of cancel requests sent.
+    """
+    count = 0
+
+    for t in ib.trades():
+        status = t.orderStatus.status
+        if status in ("PreSubmitted", "Submitted"):
+            ib.cancelOrder(t.order)
+
+            count += 1
+
+    logger.info(f"[CANCEL] Cancel requested for {count} orders")
+    # return count
+    return True
+
+
+async def cancel_open_orders_by_symbol(ib: IB, symbol: str) -> int:
+    """
+    Cancel all open orders for a given symbol.
+    """
+    count = 0
+
+    for t in ib.trades():
+        c = t.contract
+        if (
+            c.symbol == symbol
+            and t.orderStatus.status in ("PreSubmitted", "Submitted")
+        ):
+            ib.cancelOrder(t.order)
+            count += 1
+
+    logger.info(f"[CANCEL] {count} orders canceled for symbol={symbol}")
+    return count
+
+
+async def cancel_open_orders_by_order_ref(
+    ib: IB,
+    order_ref: str,
+) -> int:
+    """
+    Cancel all open orders matching orderRef.
+    """
+    count = 0
+
+    for t in ib.trades():
+        o = t.order
+        if (
+            o.orderRef == order_ref
+            and t.orderStatus.status in ("PreSubmitted", "Submitted")
+        ):
+            ib.cancelOrder(o)
+            count += 1
+
+    logger.info(
+        f"[CANCEL] {count} orders canceled for orderRef={order_ref}"
+    )
+    return count
