@@ -112,9 +112,9 @@ async def get_quote_for_contracts(ib, contracts):
     start_time = time.time()
     tickers = await ib.reqTickersAsync(*contracts)
     end_time = time.time()
-    run_spend_time = round(end_time - start_time, 2)
+    run_time_spent = round(end_time - start_time, 2)
 
-    logger.info(f"get_quote_for_contracts, calling ib.reqTickers finished, run_spend_time: {run_spend_time}  ...")
+    logger.info(f"get_quote_for_contracts, calling ib.reqTickers finished, run_time_spent: {run_time_spent}  ...")
     # Build DataFrame
     data_list = []
     for t in tickers:
@@ -170,9 +170,9 @@ async def get_quote_for_contracts_ver_2(ib, contracts):
     start_time = time.time()
     tickers = await ib.reqTickersAsync(*contracts)
     end_time = time.time()
-    run_spend_time = round(end_time - start_time, 2)
+    run_time_spent = round(end_time - start_time, 2)
 
-    logger.info(f"get_quote_for_contracts, calling ib.reqTickers finished, run_spend_time: {run_spend_time}  ...")
+    logger.info(f"get_quote_for_contracts, calling ib.reqTickers finished, run_time_spent: {run_time_spent}  ...")
     # Build DataFrame
     data_list = []
     for t in tickers:
