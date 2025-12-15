@@ -453,33 +453,49 @@ async def get_active_subscriptions(ib):
     return active
 
 
-async def get_borrower_fees(ib, contracts):
+async def check_are_they_shortable(ib, contracts):
     """
     Given a list of conIds, fetch the current borrow fees for each.
     Returns a DataFrame with conId and fee_per_annum columns.
     """
-    logger.info(f"get_borrower_fees: Fetching borrow fees for {len(contracts)} conIds")
+    logger.info(f"check_are_they_shortable:  {len(contracts)} conIds")
 
     fees_data = []
     for c in contracts:
-        logger.info(f"Fetching fee for conId {c} ...")
+        # logger.info(f"Fetching fee for conId {c} ...")
         try:
-            req = ib.reqMktData(
+            ticker = ib.reqMktData(
                 c,
                 genericTickList="236",
-                snapshot=True,
+                snapshot=False, # This required.
                 regulatorySnapshot=False
             )
+
+            # wait until populated
+            for _ in range(40):  # ~2 seconds max
+                if ticker.shortableShares is not None and not math.isnan(ticker.shortableShares):
+                    break
+                await asyncio.sleep(0.05)
+
+            shortable = ticker.shortableShares
+            shortableShares = ticker.shortableShares  # placeholder for actual fee field
+
+            # IMPORTANT: cancel to avoid streaming forever
+            ib.cancelMktData(c)
             await asyncio.sleep(1)  # wait for data to arrive
 
-            fee_per_annum = req.shortableShares  # placeholder for actual fee field
             fees_data.append({
-                "conId": c,
-                "fee_per_annum": fee_per_annum
+                # "conId": c,
+                "symbol": c.symbol,
+                "shortableShares": shortableShares,
+                "shortable": shortable,
+
             })
-            logger.info(f"Fetched fee for conId {c}: {fee_per_annum}")
+            logger.info(f"Fetched  shortable: {shortable} shortableShares: {shortableShares} {c.symbol}")
+            # logger.info(f"Fetched fee for req {c}" )
+            # logger.info(f"Fetched fee for req {ticker}")
         except Exception as e:
-            logger.error(f"@@@ Error fetching fee for conId {c}: {e}")
+            logger.error(f"@@@ Error check_are_they_shortable fee for conId {c}: {e}")
 
     # df = pd.DataFrame(fees_data)
     return fees_data
