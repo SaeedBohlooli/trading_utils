@@ -55,3 +55,34 @@ def create_option_contract(symbol=None, expiry=None,strike=None, right=None, tra
         tradingClass=trading_class
     )
     return contract
+
+async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, right=None, trading_class=None, exchange=None):
+
+    key = (symbol, expiry, int(strike), right.upper())
+    cache = global_state.option_contract_cache
+
+    # Cache hit
+    if key in cache:
+        return cache[key]
+
+    # Cache miss → create new contract
+    contract = Option(
+        symbol=symbol,
+        lastTradeDateOrContractMonth=expiry,
+        strike=strike,
+        right=right,
+        # exchange=exchange,
+        # tradingClass=trading_class,
+        exchange="CBOE" if symbol == "SPX" else "SMART",
+        tradingClass="SPXW" if symbol == "SPX" else symbol
+    )
+    # Qualify once (async)
+
+    qualified = await ib.qualifyContractsAsync(contract)
+
+    if not qualified:
+        raise RuntimeError(f" @@@ Could not qualify contract for key={key}")
+    qc = qualified[0]
+    cache[key] = qc
+
+    return qc

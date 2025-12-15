@@ -27,3 +27,5 @@ def update_quote(con_id, data):
 # ----------------------------------------------------
 contract_cache = {}     # symbol -> fully qualified contract object
 
+
+option_contract_cache = {}  # symbol+expiry+strike+right -> fully qualified contract object"

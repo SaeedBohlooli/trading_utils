@@ -248,15 +248,19 @@ def on_ticker_update(ticker):
     }
 
 
-async def subscribe_to_contracts(ib, contracts):
+async def subscribe_contracts_to_market_data(ib, contracts):
     """
     Subscribe once to continuous market data for all given contracts.
     This is the FAST method: updates come automatically via callbacks.
     """
     for c in contracts:
         # request streaming market data
+        logger.info(f"contract to subscribe: {c}")
         if c is None:
             logger.error(f"@@@@@@ subscribe_to_contracts: Encountered None contract — skipping contract: {c}")
+            continue
+        if c.conId in global_state.conid_to_symbol:
+            logger.warning(f"@@@ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
             continue
         ticker = ib.reqMktData(
             c,
