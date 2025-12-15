@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 import time
 from trading_utils import date_utils
 from trading_utils import global_state
+import numpy as np
+import math
 
 async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
     #
@@ -46,8 +48,6 @@ async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5
 
 async def qualify_contracts_v_1(ib, contracts):
     logger.info(f"qualify_contracts_v_1")
-    # if global_state.ib_config.get('fall_back', '1 == 2'):
-    #     return contracts
 
     # The asterisk (*) is crucial because it "unpacks" the list, sending each individual contract within the list as a separate argument to the qualifyContractsAsync method. This will resolve the AttributeError because the method will then correctly receive contract objects with an includeExpired attribute, rather than an unprocessable list.
 
