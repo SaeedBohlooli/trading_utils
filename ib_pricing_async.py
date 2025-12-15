@@ -87,26 +87,6 @@ async def qualify_contracts(ib, contracts):
 async def get_quote_for_contracts(ib, contracts):
 
 
-    # if global_state.ib_config.get('fall_back', '1 == 2'):
-    #     data_list = []
-    #     for contract in contracts:
-    #         data = {
-    #             "symbol": contract.symbol,
-    #             "expiry": contract.lastTradeDateOrContractMonth,
-    #             "strike": contract.strike,
-    #             "right": contract.right,
-    #             "bid": generate_fake_price(10),
-    #             "ask": generate_fake_price(10),
-    #             "last": generate_fake_price(10),
-    #         }
-    #
-    #         data_list.append(data)
-    #
-    #     df = pd.DataFrame(data_list)
-    #
-    #     logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
-    #
-    #     return df
 
     logger.info(f"get_quote_for_contracts, calling ib.reqTickers started  ... ")
     start_time = time.time()
@@ -143,28 +123,6 @@ async def get_quote_for_contracts(ib, contracts):
 
 # This one is subscribing ....
 async def get_quote_for_contracts_ver_2(ib, contracts):
-
-
-    # if global_state.ib_config.get('fall_back', '1 == 2'):
-    #     data_list = []
-    #     for contract in contracts:
-    #         data = {
-    #             "symbol": contract.symbol,
-    #             "expiry": contract.lastTradeDateOrContractMonth,
-    #             "strike": contract.strike,
-    #             "right": contract.right,
-    #             "bid": generate_fake_price(10),
-    #             "ask": generate_fake_price(10),
-    #             "last": generate_fake_price(10),
-    #         }
-    #
-    #         data_list.append(data)
-    #
-    #     df = pd.DataFrame(data_list)
-    #
-    #     logger.info(f"get_quote_for_contracts(): \n{df.to_markdown()}")
-    #
-    #     return df
 
     logger.info(f"get_quote_for_contracts, calling ib.reqTickers started  ... ")
     start_time = time.time()
@@ -494,3 +452,34 @@ async def get_active_subscriptions(ib):
 
     return active
 
+
+async def get_borrower_fees(ib, contracts):
+    """
+    Given a list of conIds, fetch the current borrow fees for each.
+    Returns a DataFrame with conId and fee_per_annum columns.
+    """
+    logger.info(f"get_borrower_fees: Fetching borrow fees for {len(contracts)} conIds")
+
+    fees_data = []
+    for c in contracts:
+        logger.info(f"Fetching fee for conId {c} ...")
+        try:
+            req = ib.reqMktData(
+                c,
+                genericTickList="236",
+                snapshot=True,
+                regulatorySnapshot=False
+            )
+            await asyncio.sleep(1)  # wait for data to arrive
+
+            fee_per_annum = req.shortableShares  # placeholder for actual fee field
+            fees_data.append({
+                "conId": c,
+                "fee_per_annum": fee_per_annum
+            })
+            logger.info(f"Fetched fee for conId {c}: {fee_per_annum}")
+        except Exception as e:
+            logger.error(f"@@@ Error fetching fee for conId {c}: {e}")
+
+    # df = pd.DataFrame(fees_data)
+    return fees_data

@@ -66,7 +66,7 @@ def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_
     return order_ref
 
 
-async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", order_ref= None) :
+async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", order_ref= None, algo_strategy=None, adaptive_priority=None ) :
     """
     Place a MARKET order for a given stock symbol.
 
@@ -90,6 +90,12 @@ async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", o
     order.tif = 'GTC'  # Good Till Cancelled
     if order_ref:
         order.orderRef = order_ref
+
+    if algo_strategy:
+        order.algoStrategy = algo_strategy
+        if adaptive_priority:
+            order.algoParams = [TagValue("adaptivePriority", str(adaptive_priority))]
+        logger.info(f"place_order, Using algo strategy: {algo_strategy}, adaptive_priority: {adaptive_priority}")
 
     # 4) Place the order
     trade = ib.placeOrder(qualified_contract, order)

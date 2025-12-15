@@ -44,6 +44,10 @@ async def process_user_requests(ib, app_config, application_state):
                     logger.info(f"Successfully closed position for symbol: {symbol}")
                     user_request['status'] += '|ENGINE_PROCESSED'
                     requests_needs_to_delete.append(user_request)
+                else:
+                    logger.info(f"NOT Successfully closed position for symbol: {symbol}")
+                    user_request['status'] += '|ENGINE_PROCESSED_ERROR'
+                    requests_needs_to_delete.append(user_request)
             else:
                 logger.warning("No symbol provided for close_position action.")
         elif user_request.get('request_type').lower() == 'close_all_positions':
