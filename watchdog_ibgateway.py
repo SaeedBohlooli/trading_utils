@@ -21,7 +21,8 @@ CHECK_INTERVAL = 30  # seconds
 
 
 file = f'watchdog-ibgateway.log'
-log_dir = '../../logs'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+log_dir = os.path.join(BASE_DIR, "..", "..", "logs")
 os.makedirs(log_dir, exist_ok=True)
 log_file = f"{log_dir}/{file}"
 
@@ -97,12 +98,14 @@ while True:
         if not alive:
             logger.error("Gateway process not running! Restarting...")
             start_gateway()
+            time.sleep(30)  # Wait extra time for restart
 
         elif alive and not port_ok:
             logger.error("Gateway running but API port is DOWN! Restarting...")
             kill_gateway()
             time.sleep(3)
             start_gateway()
+            time.sleep(60)  # Wait extra time for restart
 
         else:
             logger.info("IB Gateway OK")
