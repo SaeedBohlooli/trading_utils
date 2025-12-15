@@ -167,12 +167,38 @@ async def generate_ib_execution_df_async(ib):
     return global_state.ib_execution_df
 
 
-def load_ib_df(portfolio_dir, df_name='ib_on_fill_fill_df'):
+def load_ib_df(ib_dir, df_name='ib_on_fill_fill_df'):
     df_file_name = df_file_map.get(df_name, None)
     if df_file_name is None:
         return  pd.DataFrame()
-    file_path = f"{portfolio_dir}/{df_file_name}"
+    file_path = f"{ib_dir}/{df_file_name}"
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
         return df
     return pd.DataFrame()
+
+
+
+def get_execution_map(df, contract_localSymbol, execution_orderRef):
+    """
+    This method gets execution price and shares from ib_execution_df and returns as a dict.
+    can be used for executuon lookup for fills.
+    1. contract_localSymbol: str
+    2. execution_orderRef: str
+    """
+    if df is None or df.empty:
+        return {}
+
+    row = df.loc[
+        (df["contract_localSymbol"] == contract_localSymbol) &
+        (df["execution_orderRef"] == execution_orderRef)
+    ]
+
+    if row.empty:
+        return {}
+
+    r = row.iloc[0]
+    return {
+        "execution_price": r["execution_price"],
+        "execution_shares": r["execution_shares"],
+    }
