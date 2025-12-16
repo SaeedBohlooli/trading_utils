@@ -503,3 +503,29 @@ async def check_are_they_shortable(ib, contracts):
 
     # df = pd.DataFrame(fees_data)
     return fees_data
+
+
+
+def find_bid_ask(df, symbol, strike, expiry=None, right=None):
+    if df is None or df.empty:
+        return {}
+    mask = (
+        (df["symbol"] == symbol) &
+        (df["strike"] == strike)
+    )
+
+    if expiry is not None:
+        mask &= (df["expiry"] == expiry)
+
+    if right is not None:
+        mask &= (df["right"] == right)
+
+    row = df.loc[mask]
+
+    if row.empty:
+        return {}
+    # TODO in case more than one row. we need to handle it ...
+
+    r = row.iloc[0]
+
+    return {'bid': r["bid"], 'ask': r["ask"], 'timestamp': r["timestamp"]}
