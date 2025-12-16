@@ -153,7 +153,7 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
     logger.info(f"close_position_async, No position found for symbol={symbol}")
     return False
 
-def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None):
+async def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None):
     # TODO check side to make sure we are closing correctly ...
     # THIS IS VERY IMPORTANT TO AVOID MISTAKES
     """

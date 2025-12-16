@@ -39,7 +39,11 @@ async def process_user_requests(ib, app_config, application_state):
             if symbol:
                 logger.info(f"Closing position for symbol: {symbol}")
                 order_ref = ib_orders_async.generate_order_ref(application_state.get('portfolio_id'),event='CLOSE', symbol=symbol, unique_run_number=application_state.get('unique_run_number'))
-                result = await ib_positions_async.close_position_async(ib, symbol, order_ref=order_ref)
+                if symbol == 'SPX': # TOD we need to andle if there are for more special symbols like this ...
+                    result = await ib_positions_async.close_position_by_con_id(ib, con_id=user_request.get('contract_id',-1) ,order_ref=order_ref)
+                else:
+                    result = await ib_positions_async.close_position_async(ib, symbol, order_ref=order_ref)
+
                 if result:
                     logger.info(f"Successfully closed position for symbol: {symbol}")
                     user_request['status'] += '|ENGINE_PROCESSED'
