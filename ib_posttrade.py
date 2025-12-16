@@ -104,7 +104,7 @@ def save_ib_dfs(ib_dir, ib):
         df = getattr(global_state, df_name, None)
         if df is not None:
             file_path = f"{ib_dir}/{file_name}"
-            df_utils.save_df_to_csv_a_tabular(df, file_path=file_path, mode='a')
+            df_utils.save_df_to_csv(df, file_path=file_path, mode='a', tabular=True)
 
     return
 
@@ -118,7 +118,7 @@ async def save_ib_dfs_async(ib_dir, ib):
         df = getattr(global_state, df_name, None)
         if df is not None:
             file_path = f"{ib_dir}/{file_name}"
-            df_utils.save_df_to_csv_a_tabular(df, file_path=file_path, mode='a')
+            df_utils.save_df_to_csv(df, file_path=file_path, mode='a', tabular=True)
 
     return
 

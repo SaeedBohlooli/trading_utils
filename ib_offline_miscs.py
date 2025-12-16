@@ -157,7 +157,7 @@ def orchestrate(portfolio_id='p250'):
     trades_w_prices_df = extract_trades_with_prices(merged_df)
     
     
-    df_utils.save_df_to_csv_a_tabular(trades_w_prices_df, file_path=ib_pnl_dir)
+    df_utils.save_df_to_csv(trades_w_prices_df, file_path=ib_pnl_dir, tabular=True)
 
     print('--------------------------')
     print(f"trades_w_prices_df \n{trades_w_prices_df[0:].to_markdown()}")

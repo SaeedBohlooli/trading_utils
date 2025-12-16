@@ -98,47 +98,55 @@ def drop_dupplicates_in_file(file_path, unique_columns=[], keep='last'):
         df.to_csv(file_path, index=False, mode='w')
     return
 
-def save_df_to_csv_a_tabular(df=None, file_path='', mode='w', drop_dupplicates=True, unique_columns=[]):
-    # TODO unique_column should be a list
-    if df is not None and len(df) > 0:
+def save_df_to_csv(df=None, file_path='', mode='w', check_columns: bool = True, tabular: bool= False, drop_dupplicates=True, unique_columns=[]):
+    if df is not None and len(df) == 0:
+        logger.warning("save_df_to_csv: Empty df, nothing to save.")
+        return
 
-        if mode == 'w':
-            header = True
+    save_df_to_csv_w_mode(df, file_path, mode=mode, check_columns=check_columns)
 
-        else:
-            # moed is a, check columns
-            logger.debug(f"save_df_to_csv_a_tabular, file_path: {file_path}")
+    if drop_dupplicates:
+        if unique_columns == [] and 'unique_id' in df.columns: # it is passeD_empty, but uunique_id is there we add it
+            unique_columns = ['unique_id']
+        drop_dupplicates_in_file(file_path, unique_columns=unique_columns)
+    if tabular:
+        write_file_in_tabulate(src_file_path=file_path)
+
+    return
+
+
+def save_df_to_csv_w_mode(df, file_path: str, mode: str= None, check_columns: bool = True):
+    if df is None or len(df) == 0:
+        logger.warning("save_df_to_csv_w_mode: Empty df, nothing to save.")
+        return
+
+    if mode == 'w':
+        header = True
+    else:
+        # mode is a, we may need to check columns
+        if check_columns:
+            # mode is a, check columns
+            logger.debug(f"save_df_to_csv, file_path: {file_path}")
             if os.path.exists(file_path):
                 existing_cols = pd.read_csv(file_path, nrows=0).columns.tolist()
                 # --- Compare with new df columns
                 if list(df.columns) == existing_cols:
                     mode = 'a'
                     header = False
-                else: # columns are not same, we overwrite ...
+                else:  # columns are not same, we overwrite ...
                     file_utils.create_a_backup(file_path)
                     mode = 'w'
                     header = True
             else:
                 header = True
+        else:
+            header = False
 
-        df.to_csv(file_path, mode=mode, index=False, header=header)
-
-        # if drop_dupplicates:
-        #     if unique_column != '' and unique_column in df.columns:
-        #         drop_dupplicates_in_file(file_path, unique_column=unique_column)  # 'event'
-        #     else:
-        #         drop_dupplicates_in_file(file_path)  # 'event'
-        if drop_dupplicates:
-            if unique_columns == [] and 'unique_id' in df.columns: # it is passeD_empty, but uunique_id is there we add it
-                unique_columns = ['unique_id']
-            drop_dupplicates_in_file(file_path, unique_columns=unique_columns)
-
-        write_file_in_tabulate(src_file_path=file_path)
+    df.to_csv(file_path, mode=mode, index=False, header=header)
     return
 
-
-def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=0):
-
+def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=None):
+    logger.info(f"Started write_file_in_tabulate, src_file_path: {src_file_path}, dest_file_path: {dest_file_path}, number_of_rows: {number_of_rows}")
     df = pd.read_csv(src_file_path)
     if len(df) > 0:
         if dest_file_path is None:
@@ -148,11 +156,12 @@ def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=0
         # for col in df.select_dtypes(include=['object', 'bool']):
         #     df[col] = df[col].astype(str)
         with open(dest_file_path, 'w') as f:
-            if number_of_rows == 0:
+            if number_of_rows:
+                f.write(tabulate(df[-number_of_rows:].astype(str), headers='keys', tablefmt='psql')) #, numalign=None, stralign='left'
+            else:
                 # write all
                 f.write(tabulate(df.astype(str), headers='keys', tablefmt='psql'))
-            else:
-                f.write(tabulate(df[-number_of_rows:].astype(str), headers='keys', tablefmt='psql')) #, numalign=None, stralign='left'
+    logger.info(f"Finished write_file_in_tabulate, dest_file_path: {dest_file_path}")
     return
 
 
