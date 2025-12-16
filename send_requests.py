@@ -17,18 +17,18 @@ if True:
 
     d = {
       "request_type": "BUY_ORDER",
-      "base_strike": 6900,
-      "user_price": -.95,
-      "expiry": "20251212",
+      "base_strike": 6810,
+      "user_price": -1,
+      "expiry": "20251216",
       "web_request_id": "saeed-1",
       "web_timestamp": "2025-12-11 16:44:18",
       "status": "WEB_SENT"
     }
     # d = {
-    #     "order_set_id": "SET-20251211-105818--113",  # TODO u need to change it every time
-    #     "base_strike": 6850,
-    #     "expiry": 20251211,
-    #     "user_price" : -21.50,
+    #     "order_set_id": "SET-20251215-122157-80",  # TODO u need to change it every time
+    #     "base_strike": 6795,
+    #     "expiry": 20251216,
+    #     "user_price" : -30.50,
     #     "web_request_id": "100",
     #     "request_type": "CLOSE_ORDER_SET",
     #     "memo": "A request from Web to close order ",
