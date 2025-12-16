@@ -12,5 +12,5 @@ def update_application_state_for_positions(ib, application_state):
 
     ib_positions_dic = ib_positions_async.convert_positions_to_dict(ib)
     application_state["ib_positions"] = ib_positions_dic
-    FileManager.save_my_df(application_state, df_name= "ib_positions", save_tabular=True)
+    FileManager.save_my_df(ib_positions_dic, df_name= "ib_positions", save_tabular=True)
     logger.info(f"update_application_state_for_positions: Updated positions with {ib_positions_dic}")

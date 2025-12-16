@@ -5,42 +5,29 @@ print('# ###########################')
 host= '127.0.0.1'
 port = 5102
 if True:
-    # d = {
-    #     "request_type": "buy_order",
-    #     "base_strike": "6870",
-    #     "expiry": 2025112,
-    #     "bid_price" :-8,
-    #     "web_request_id": "test_request_003",
-    #     "memo": "Test buy order from send_requests.py",
-    #     'status': 'PY_SENT'
-    # }
+
 
     d = {
       "request_type": "BUY_ORDER",
       "base_strike": 6810,
-      "user_price": -1,
-      "expiry": "20251216",
+      "user_price": 1,
+      "expiry": "20251217",
       "web_request_id": "saeed-1",
       "web_timestamp": "2025-12-11 16:44:18",
       "status": "WEB_SENT"
     }
     # d = {
-    #     "order_set_id": "SET-20251215-122157-80",  # TODO u need to change it every time
-    #     "base_strike": 6795,
+    #     "order_set_id": "SET-20251216-154252-85",  # TODO u need to change it every time
+    #     "base_strike": 6810,
     #     "expiry": 20251216,
-    #     "user_price" : -30.50,
+    #     "user_price" : -20,
     #     "web_request_id": "100",
     #     "request_type": "CLOSE_ORDER_SET",
     #     "memo": "A request from Web to close order ",
-    # 'status': 'PY_SENT'
+    #     'status': 'PY_SENT'
     # }
 
-    # d = {
-    #     "request_type": "close_position",
-    #     "symbol": "AAPL",
-    #     "quantity": 10,
-    #     "web_request_id": "test_request_001"
-    # }
+
 
     url = f"http://{host}:{port}/api/send-request"
     resp = requests.post(

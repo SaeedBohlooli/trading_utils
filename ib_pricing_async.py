@@ -396,7 +396,7 @@ def fix_bid_ask_with_fallback(df):
 
     invalid_rows = df.loc[bid_invalid | ask_invalid]
     if len(invalid_rows) > 0:
-        logger.warning(f"@@@@ fix_bid_ask_with_fallback, invalid rows (before fixing) \n{invalid_rows.to_markdown()}")
+        logger.warning(f"@@ fix_bid_ask_with_fallback, invalid rows (before fixing) \n{invalid_rows.to_markdown()}")
 
     # -------------------------
     # FIX BID

@@ -206,7 +206,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
 
         return True
 
-    logger.info(f"close_position_by_con_id, No position found for symbol={symbol}")
+    logger.info(f"close_position_by_con_id, No position found for con_id={con_id}")
     return None
 
 
