@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from itertools import count
-
+from trading_utils import date_utils
 import pytz
 
 from ib_async import IB, Stock
@@ -21,7 +21,15 @@ async def calculate_market_session(ib: IB) -> dict:
     logger.debug(f"[MarketSession] details: {details}")
     # 2025-12-14 11:14:11,368 - trading_utils.market_session - INFO - [MarketSession] details:
     # [ContractDetails(contract=Contract(secType='STK', conId=265598, symbol='AAPL', exchange='SMART', primaryExchange='ISLAND', currency='USD', localSymbol='AAPL', tradingClass='NMS'), marketName='NMS', minTick=0.01, orderTypes='ACTIVETIM,AD,ADDONT,ADJUST,ALERT,ALGO,ALLOC,AON,AVGCOST,BASKET,BENCHPX,CASHQTY,COND,CONDORDER,DARKONLY,DARKPOLL,DAY,DEACT,DEACTDIS,DEACTEOD,DIS,DUR,GAT,GTC,GTD,GTT,HID,IBKRATS,ICE,IMB,IOC,LIT,LMT,LOC,MIDPX,MIT,MKT,MOC,MTL,NGCOMB,NODARK,NONALGO,OCA,OPG,OPGREROUT,PEGBENCH,PEGMID,POSTATS,POSTONLY,PREOPGRTH,PRICECHK,REL,REL2MID,RELPCTOFS,RPI,RTH,SCALE,SCALEODD,SCALERST,SIZECHK,SMARTSTG,SNAPMID,SNAPMKT,SNAPREL,STP,STPLMT,SWEEP,TRAIL,TRAILLIT,TRAILLMT,TRAILMIT,WHATIF', validExchanges='SMART,AMEX,NYSE,CBOE,PHLX,ISE,CHX,ARCA,ISLAND,DRCTEDGE,BEX,BATS,EDGEA,BYX,IEX,EDGX,FOXRIVER,PEARL,NYSENAT,LTSE,MEMX,IBEOS,OVERNIGHT,TPLUS0,PSX,T24X', priceMagnifier=1, underConId=0, longName='APPLE INC', contractMonth='', industry='Technology', category='Computers', subcategory='Computers', timeZoneId='US/Eastern', tradingHours='20251214:CLOSED;20251215:0400-20251215:2000;20251216:0400-20251216:2000;20251217:0400-20251217:2000;20251218:0400-20251218:2000;20251219:0400-20251219:2000', liquidHours='20251214:CLOSED;20251215:0930-20251215:1600;20251216:0930-20251216:1600;20251217:0930-20251217:1600;20251218:0930-20251218:1600;20251219:0930-20251219:1600', evRule='', evMultiplier=0, mdSizeMultiplier=1, aggGroup=1, underSymbol='', underSecType='', marketRuleIds='26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26', secIdList=[TagValue(tag='ISIN', value='US0378331005')], realExpirationDate='', lastTradeTime='', stockType='COMMON', minSize=0.0001, sizeIncrement=0.0001, suggestedSizeIncrement=100.0, cusip='', ratings='', descAppend='', bondType='', couponType='', callable=False, putable=False, coupon=0, convertible=False, maturity='', issueDate='', nextOptionDate='', nextOptionType='', nextOptionPartial=False, notes='')]
-
+    if not details:
+        logger.error("@@ [MarketSession] No contract details found for AAPL")
+        return {
+            "date": datetime.now().date().isoformat(),
+            "is_open": False,
+            "start": None,
+            "end": None,
+            'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
+        }
     details = details[0]
     logger.info(f"[MarketSession] Trading hours: {details.tradingHours}, Timezone: {details.timeZoneId}, details: {details}")
 
@@ -51,6 +59,7 @@ async def calculate_market_session(ib: IB) -> dict:
                     "is_open": False,
                     "start": None,
                     "end": None,
+                    'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
                 }
         else: # 20251215:0400-20251215:2000
 
@@ -65,6 +74,7 @@ async def calculate_market_session(ib: IB) -> dict:
                 "is_open": start_dt <= now <= end_dt,
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
+                'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
             }
 
     logger.warning(f"@@@@ [MarketSession] Market session failed {details}")
@@ -73,6 +83,7 @@ async def calculate_market_session(ib: IB) -> dict:
         "is_open": False,
         "start": None,
         "end": None,
+        'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
     }
 
 

@@ -462,7 +462,7 @@ async def check_are_they_shortable(ib, contracts):
     Given a list of conIds, fetch the current borrow fees for each.
     Returns a DataFrame with conId and fee_per_annum columns.
     """
-    logger.info(f"check_are_they_shortable:  {len(contracts)} conIds")
+    logger.info(f"check_are_they_shortable:  {len(contracts)} ")
 
     fees_data = []
     for c in contracts:
@@ -495,9 +495,8 @@ async def check_are_they_shortable(ib, contracts):
                 "shortable": shortable,
 
             })
-            logger.info(f"Fetched  shortable: {shortable} shortableShares: {shortableShares} {c.symbol}")
-            # logger.info(f"Fetched fee for req {c}" )
-            # logger.info(f"Fetched fee for req {ticker}")
+            logger.info(f"Fetched  shortable: {shortable} shortableShares: {shortableShares}, {c.symbol}")
+
         except Exception as e:
             logger.error(f"@@@ Error check_are_they_shortable fee for conId {c}: {e}")
 
