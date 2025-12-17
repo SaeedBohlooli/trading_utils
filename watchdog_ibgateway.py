@@ -22,11 +22,11 @@ DEFAULT_CONFIG = {
         "start_script": r"C:\IBC\startgateway.bat",
     },
     "watchdog": {
-        "check_interval": 30,
+        "check_interval": 60,
         "min_failures_to_restart": 2,
     },
     "ib_api": {
-        "client_id": 99,
+        "client_id": 990,
         "timeout": 3,
     },
     "logging": {
@@ -39,7 +39,7 @@ DEFAULT_CONFIG = {
 }
 
 # -----------------------------------
-# CONFIG LOADING
+# LOAD CONFIG
 # -----------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -56,16 +56,16 @@ def deep_merge(defaults: dict, overrides: dict) -> dict:
     return result
 
 
-def load_config():
+def load_config() -> dict:
     if not os.path.exists(CONFIG_PATH):
         return DEFAULT_CONFIG
 
     try:
         with open(CONFIG_PATH, "r") as f:
-            yaml_config = yaml.safe_load(f) or {}
-        return deep_merge(DEFAULT_CONFIG, yaml_config)
+            data = yaml.safe_load(f) or {}
+        return deep_merge(DEFAULT_CONFIG, data)
     except Exception as e:
-        print(f"Failed to load YAML config, using defaults: {e}")
+        print(f"Failed to load config, using defaults: {e}")
         return DEFAULT_CONFIG
 
 
@@ -129,29 +129,30 @@ def is_process_running(name: str) -> bool:
                 return True
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
-    logger.error(f"IB process '{name}' is NOT running")
     return False
 
 
 def is_port_open(port: int) -> bool:
-    s = socket.socket()
+    """
+    True if something is listening on the port.
+    Connection refused means the socket exists.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(1)
     try:
-        s.connect(("127.0.0.1", port))
+        result = s.connect_ex(("127.0.0.1", port))
+        return result in (0, 10061)  # 10061 = connection refused on Windows
+    finally:
         s.close()
-        return True
-    except Exception:
-        logger.error(f"Port {port} is NOT open")
-        return False
 
 
 def start_ib_app():
-    logger.warning("Starting IB application via script...")
+    logger.warning("Starting IB application")
     subprocess.Popen(START_SCRIPT, shell=True)
 
 
 def kill_ib_app():
-    logger.warning("Killing IB application process...")
+    logger.warning("Killing IB application process")
     for proc in psutil.process_iter(['name']):
         try:
             if proc.info['name'] and PROCESS_NAME.lower() in proc.info['name'].lower():
@@ -202,7 +203,7 @@ async def is_ib_api_healthy(
 # -----------------------------------
 
 def run_watchdog():
-    logger.info("Starting IB watchdog (Gateway / TWS compatible)")
+    logger.info("Starting IB watchdog")
     nu_of_failures = 0
 
     while True:
@@ -218,18 +219,20 @@ def run_watchdog():
                 f"port_open={port_open}, ib_api_ok={ib_api_ok}"
             )
 
-            if not process_alive and not port_open and not ib_api_ok:
+            # FAILURE CONDITION (FINAL RULE)
+            if not port_open and not ib_api_ok:
                 nu_of_failures += 1
                 logger.error(
-                    f"IB APP DOWN + Port DOWN + API DOWN "
-                    f"(failure {nu_of_failures})"
+                    f"Failure detected port_open={port_open}, "
+                    f"ib_api_ok={ib_api_ok}, "
+                    f"count={nu_of_failures}"
                 )
             else:
                 nu_of_failures = 0
-                logger.info("No restart condition met")
+                logger.info("No failure condition met")
 
             if nu_of_failures >= MIN_FAILURE_NEEDED_TO_RESTART:
-                logger.warning("Restarting IB application (confirmed hard failure)")
+                logger.warning("Restarting IB application")
                 kill_ib_app()
                 time.sleep(5)
                 start_ib_app()
@@ -248,4 +251,3 @@ def run_watchdog():
 
 if __name__ == "__main__":
     run_watchdog()
-

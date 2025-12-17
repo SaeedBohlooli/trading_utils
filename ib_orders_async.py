@@ -190,12 +190,15 @@ async def convert_open_orders_to_dict(ib: IB):
         status = t.orderStatus.status
 
         # # Keep only active orders
-        if status  in ("Cancelled"):
+        if status  in ("Cancelled", 'Filled'):
             logger.info(f"convert_open_orders_to_dict: Skipping orderId={t.order.orderId} with status={status}")
             continue
 
         o = t.order
         c = t.contract
+
+        if o.totalQuantity == 0:
+            continue
 
         logger.info(f"convert_open_orders_to_dict: Processing orderId={o.orderId}")
         logger.info(f"convert_open_orders_to_dict:   status={status}, action={o.action}, qty={o.totalQuantity}, filled={t.orderStatus.filled}, remaining={t.orderStatus.remaining}, limit_price={o.lmtPrice}, aux_price={o.auxPrice}")
