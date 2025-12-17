@@ -44,6 +44,49 @@ def send_order(ib, legs, total_quantity, root_symbol, order_ref):
     return trade
 
 
+async def place_single_leg_option_order(ib, symbol=None, expiry=0, strike=0, right=None, side=None, total_quantity=0, order_ref=None, exchange='SMART', currency='USD', trading_class=None):
+    # Combo Contract
+
+    logger.info(f"Placing single leg option order for {symbol} {expiry} {strike} {right} {side} qty={total_quantity} order_ref={order_ref}")
+
+    if trading_class is None:
+        trading_class = symbol
+
+    contract = Option(
+        symbol=symbol,
+        lastTradeDateOrContractMonth=expiry,
+        strike=float(strike),
+        right=right,
+        exchange=exchange,
+        currency=currency,
+        tradingClass=trading_class)
+
+    action = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL'
+
+    # 2) Qualify contract (fills in conId etc.)
+    qualified = await ib.qualifyContractsAsync(contract)
+    if not qualified:
+        logger.error("Could not qualify contract (check symbol/expiry/strike/exchange).")
+        return
+
+    contract = qualified[0]
+    print("Qualified:", contract)
+
+    order = MarketOrder('BUY', totalQuantity=total_quantity)
+    logger.info(f"TODO {order}")
+    if order_ref:
+        order.orderRef = order_ref
+
+
+    trade = ib.placeOrder(contract, order)
+    trade.fillEvent += ib_posttrade.on_fill
+
+    logger.info(f"Order sent ....")
+    logger.info(f"trade: {trade}")
+
+    return trade
+
+
 
 def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_run_number=None, right= None, alias=None):
     # event: OPEN, CLOSE
