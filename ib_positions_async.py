@@ -58,6 +58,8 @@ def get_position_qty(ib, symbol):
 def convert_positions_to_dict(ib):
     out = []
     for p in ib.positions():
+        if p.position ==0:
+            continue
         logger.info(f"convert_positions_to_dict: Processing position: {p}")
         sym = p.contract.symbol
         d = {
