@@ -16,6 +16,7 @@ PROCESS_NAME = "chrome"      # Process to monitor # TEST to see is the PORT chec
 PROCESS_NAME = "java"      # Process to monitor
 # IBC_START_SCRIPT = r"C:\Jts\IBController\start-gateway.bat"  # <-- your start script
 IBC_START_SCRIPT = r"C:\IBC\startgateway.bat"  # <-- your start script
+MIN_FAILURE_NEEDED_TO_RESTART = 2
 
 CHECK_INTERVAL = 30  # seconds
 
@@ -87,28 +88,69 @@ def kill_gateway():
 # MAIN WATCHDOG LOOP
 # -----------------------------------
 
-logger.info("Starting IB Gateway watchdog...")
+import asyncio
+import logging
+from ib_insync import IB
 
+logger = logging.getLogger(__name__)
+
+async def check_ib_api_health(ib: IB, timeout: float = 3.0) -> bool:
+    """
+    True  -> IB API is healthy
+    False -> IB API is unhealthy
+    """
+
+    try:
+        # 1. Must be connected at socket level
+        if not ib.isConnected():
+            logger.error("IB socket not connected")
+            return False
+
+        # 2. Lightweight request that requires full session validity
+        await asyncio.wait_for(ib.reqCurrentTime(), timeout=timeout)
+
+        return True
+
+    except asyncio.TimeoutError:
+        logger.error("IB API health check timed out")
+        return False
+
+    except Exception as e:
+        logger.error(f"IB API health check failed: {e}")
+        return False
+
+
+logger.info("Starting IB Gateway watchdog...")
+nu_of_failures = 0
 while True:
+
     try:
         logger.info("================= ")
         alive = is_process_running(PROCESS_NAME)
         port_ok = is_port_open(GATEWAY_PORT)
-
+        connection_is_healthy = True
         if not alive:
-            logger.error("Gateway process not running! Restarting...")
-            start_gateway()
-            time.sleep(30)  # Wait extra time for restart
+            connection_is_healthy = False
+            logger.error("Gateway process not running!...")
+            nu_of_failures += 1
 
         elif alive and not port_ok:
-            logger.error("Gateway running but API port is DOWN! Restarting...")
-            kill_gateway()
-            time.sleep(3)
-            start_gateway()
-            time.sleep(60)  # Wait extra time for restart
+            connection_is_healthy = False
+            logger.error("Gateway running but API port is DOWN! ...")
+            nu_of_failures += 1
 
         else:
             logger.info("IB Gateway OK")
+            nu_of_failures = 0
+
+
+        if nu_of_failures > MIN_FAILURE_NEEDED_TO_RESTART:
+            logger.info("Killing the Gateway...")
+            kill_gateway()
+            time.sleep(5)
+            logger.info("Restarting IB Gateway...")
+            start_gateway()
+
 
         time.sleep(CHECK_INTERVAL)
     except Exception as e:
