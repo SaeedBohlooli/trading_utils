@@ -92,6 +92,8 @@ def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_
     # event: OPEN, CLOSE
     ev = 'OP' if event == 'OPEN' else 'CL'
 
+    symbol = symbol if symbol else 'ALL'  # e.g. for portfolio-wide orders
+
     order_ref = f"{portfolio_id}--{symbol}--{ev}"
 
     if side:

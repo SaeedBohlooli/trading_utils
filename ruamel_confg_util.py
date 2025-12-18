@@ -35,7 +35,7 @@ def load_app_config(portfolio_id, config_folder=''):
 def load_runtime_config(portfolio_id, config_folder=''):
     if config_folder == '':
         configs_folder = f'../configs'
-    file_path = f'{configs_folder}/runtime-config-{portfolio_id}.yaml'
+    file_path = f'{configs_folder}/config-{portfolio_id}-runtime.yaml'
     logger.info(f"loading runtime_config ....{file_path}")
     config = load_config(file_path)
     logger.info(f"loaded.")
@@ -47,6 +47,22 @@ def update_config_and_save(portfolio_id='', key='', value='', file_path=''):
         file_path = f'{configs_folder}/config-{portfolio_id}.yaml'
 
     app_config = load_app_config(portfolio_id)
+
+    existing_value = app_config[key]
+    if value != existing_value:
+        logger.info(f"in update_config_and_save, key: {key}, existing value: {existing_value}, new value: {value} ")
+        app_config[key] = value
+
+        with open(file_path, 'w') as f:  #TODO fix it
+            yaml.dump(app_config, f)
+    return app_config
+
+def update_runtime_config_and_save(portfolio_id='', key='', value='', file_path=''):
+    if file_path != '':
+        configs_folder = f'../configs'
+        file_path = f'{configs_folder}/config-{portfolio_id}-runtime.yaml'
+
+    app_config = load_runtime_config(portfolio_id)
 
     existing_value = app_config[key]
     if value != existing_value:

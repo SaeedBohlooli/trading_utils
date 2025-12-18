@@ -61,7 +61,7 @@ def load_runtime_config(portfolio_id, config_folder='',load_coommon=False):
         configs_folder = f'../configs'
 
     logger.info(f"loading runtime-config  ....")
-    config = load_config(f'{configs_folder}/runtime-config-{portfolio_id}.yaml')
+    config = load_config(f'{configs_folder}/config-{portfolio_id}-runtime.yaml')
     config.update(config)
     logger.info(f"loaded.")
 
