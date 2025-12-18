@@ -57,8 +57,8 @@ def update_config_and_save(portfolio_id='', key='', value='', file_path=''):
             yaml.dump(app_config, f)
     return app_config
 
-def update_runtime_config_and_save(portfolio_id='', key='', value='', file_path=''):
-    if file_path != '':
+def update_runtime_config_and_save(portfolio_id='', key='', value='', file_path:str = None):
+    if file_path is None:
         configs_folder = f'../configs'
         file_path = f'{configs_folder}/config-{portfolio_id}-runtime.yaml'
 
