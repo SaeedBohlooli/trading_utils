@@ -184,7 +184,8 @@ async def is_ib_api_healthy(
             ib.reqCurrentTimeAsync(),
             timeout=timeout,
         )
-
+        logger.info(f"IB API connected to {host}:{port} ... sleep for 10 sec")
+        await asyncio.sleep(10)
         return True
 
     except Exception as e:
