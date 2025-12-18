@@ -8,7 +8,7 @@ import logging.handlers
 import os
 import asyncio
 import yaml
-from ib_insync import IB
+from ib_async import IB
 
 # -----------------------------------
 # DEFAULT CONFIG
