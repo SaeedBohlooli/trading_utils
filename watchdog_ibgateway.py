@@ -8,7 +8,7 @@ import logging.handlers
 import os
 import asyncio
 import yaml
-from ib_insync import IB
+from ib_async import IB
 
 # -----------------------------------
 # DEFAULT CONFIG
@@ -43,7 +43,7 @@ DEFAULT_CONFIG = {
 # -----------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "watchdog_config.yaml")
+CONFIG_PATH = os.path.join(BASE_DIR, "..", "configs", "watchdog_config.yaml")
 
 
 def deep_merge(defaults: dict, overrides: dict) -> dict:
@@ -58,9 +58,11 @@ def deep_merge(defaults: dict, overrides: dict) -> dict:
 
 def load_config() -> dict:
     if not os.path.exists(CONFIG_PATH):
+        print(f"No config file found at {CONFIG_PATH}")
         return DEFAULT_CONFIG
 
     try:
+        print(f"Loading config from {CONFIG_PATH}")
         with open(CONFIG_PATH, "r") as f:
             data = yaml.safe_load(f) or {}
         return deep_merge(DEFAULT_CONFIG, data)
@@ -102,7 +104,7 @@ log_file = os.path.join(log_dir, LOG_FILE_NAME)
 handler = logging.handlers.RotatingFileHandler(
     filename=log_file,
     maxBytes=LOG_MAX_BYTES,
-    backupCount=LOG_BACKUP_COUNT
+    backupCount=LOG_BACKUP_COUNT,
 )
 
 formatter = logging.Formatter(
@@ -113,7 +115,7 @@ handler.setFormatter(formatter)
 
 logging.basicConfig(
     level=LOG_LEVEL,
-    handlers=[handler, logging.StreamHandler()]
+    handlers=[handler, logging.StreamHandler()],
 )
 
 logger = logging.getLogger(__name__)
@@ -123,9 +125,9 @@ logger = logging.getLogger(__name__)
 # -----------------------------------
 
 def is_process_running(name: str) -> bool:
-    for proc in psutil.process_iter(['name']):
+    for proc in psutil.process_iter(["name"]):
         try:
-            if proc.info['name'] and name.lower() in proc.info['name'].lower():
+            if proc.info["name"] and name.lower() in proc.info["name"].lower():
                 return True
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
@@ -133,17 +135,11 @@ def is_process_running(name: str) -> bool:
 
 
 def is_port_open(port: int) -> bool:
-    """
-    True if something is listening on the port.
-    Connection refused means the socket exists.
-    """
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(1)
     try:
-        result = s.connect_ex(("127.0.0.1", port))
-        return result in (0, 10061)  # 10061 = connection refused on Windows
-    finally:
-        s.close()
+        with socket.create_connection(("127.0.0.1", port), timeout=1):
+            return True
+    except OSError:
+        return False
 
 
 def start_ib_app():
@@ -153,57 +149,62 @@ def start_ib_app():
 
 def kill_ib_app():
     logger.warning("Killing IB application process")
-    for proc in psutil.process_iter(['name']):
+    for proc in psutil.process_iter(["name"]):
         try:
-            if proc.info['name'] and PROCESS_NAME.lower() in proc.info['name'].lower():
+            if proc.info["name"] and PROCESS_NAME.lower() in proc.info["name"].lower():
                 proc.kill()
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
 
 
 # -----------------------------------
-# IB API HEALTH CHECK
+# IB API HEALTH CHECK (ASYNC, SIMPLE)
 # -----------------------------------
 
 async def is_ib_api_healthy(
     host="127.0.0.1",
     port=IB_PORT,
-    client_id=IB_API_CLIENT_ID,
-    timeout=IB_API_TIMEOUT
+    timeout=IB_API_TIMEOUT,
 ) -> bool:
     ib = IB()
+    client_id = IB_API_CLIENT_ID + (int(time.time()) % 1000)
+
     try:
         await asyncio.wait_for(
             ib.connectAsync(
                 host=host,
                 port=port,
                 clientId=client_id,
-                timeout=timeout,
-                readonly=True
+                readonly=True,
             ),
-            timeout=timeout + 1
+            timeout=timeout,
         )
 
-        await asyncio.wait_for(ib.reqCurrentTime(), timeout=timeout)
+        await asyncio.wait_for(
+            ib.reqCurrentTimeAsync(),
+            timeout=timeout,
+        )
+        logger.info(f"IB API connected to {host}:{port} ... sleep for 10 sec")
+        await asyncio.sleep(10)
         return True
 
     except Exception as e:
-        logger.error(f"IB API health check failed: {e}")
+        logger.error(f"error:{e}")
         return False
 
     finally:
         try:
-            ib.disconnect()
-        except Exception:
-            pass
-
+            if ib.isConnected():
+                ib.disconnect()
+        except Exception as e:
+            logger.error(f"error: {e}")
 
 # -----------------------------------
-# MAIN WATCHDOG
+# MAIN WATCHDOG (ASYNC)
 # -----------------------------------
 
-def run_watchdog():
-    logger.info("Starting IB watchdog")
+async def run_watchdog():
+    logger.info("Starting IB watchdog (async)")
     nu_of_failures = 0
 
     while True:
@@ -212,14 +213,14 @@ def run_watchdog():
 
             process_alive = is_process_running(PROCESS_NAME)
             port_open = is_port_open(IB_PORT)
-            ib_api_ok = asyncio.run(is_ib_api_healthy())
+            ib_api_ok = await is_ib_api_healthy()
 
             logger.info(
                 f"Health process_alive={process_alive}, "
                 f"port_open={port_open}, ib_api_ok={ib_api_ok}"
             )
 
-            # FAILURE CONDITION (FINAL RULE)
+            # FAILURE CONDITION (YOUR FINAL RULE)
             if not port_open and not ib_api_ok:
                 nu_of_failures += 1
                 logger.error(
@@ -234,15 +235,19 @@ def run_watchdog():
             if nu_of_failures >= MIN_FAILURE_NEEDED_TO_RESTART:
                 logger.warning("Restarting IB application")
                 kill_ib_app()
-                time.sleep(5)
+
+                await asyncio.sleep(5)
                 start_ib_app()
+                await asyncio.sleep(10)
+
                 nu_of_failures = 0
 
-            time.sleep(CHECK_INTERVAL)
+            await asyncio.sleep(CHECK_INTERVAL)
 
         except Exception as e:
             logger.error(e)
             logger.error(traceback.format_exc())
+            await asyncio.sleep(CHECK_INTERVAL)
 
 
 # -----------------------------------
@@ -250,4 +255,4 @@ def run_watchdog():
 # -----------------------------------
 
 if __name__ == "__main__":
-    run_watchdog()
+    asyncio.run(run_watchdog())

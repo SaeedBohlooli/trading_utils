@@ -2,7 +2,7 @@ import logging
 from ib_async import IB
 import asyncio
 logger = logging.getLogger(__name__)
-
+import traceback
 
 async def create_ib_async(ip="127.0.0.1", port=7497, client_id=1, retry_delay=3):
     """
@@ -27,6 +27,8 @@ async def create_ib_async(ip="127.0.0.1", port=7497, client_id=1, retry_delay=3)
 
         except Exception as e:
             logger.error(f"@@@ IBKR connect failed: {e}. Retrying in {retry_delay} seconds.")
+            logger.error(traceback.format_exc())
+
 
         # Wait before retrying
         await asyncio.sleep(retry_delay)

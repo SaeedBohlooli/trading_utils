@@ -155,7 +155,7 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
     logger.info(f"close_position_async, No position found for symbol={symbol}")
     return False
 
-async def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None):
+def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None):
     # TODO check side to make sure we are closing correctly ...
     # THIS IS VERY IMPORTANT TO AVOID MISTAKES
     """
@@ -163,6 +163,7 @@ async def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_
     - If long → send SELL
     - If short → send BUY
     """
+    logger.info(f"close_position_by_con_id, Closing position for symbol: {symbol}, con_id: {con_id}, side: {side}, qty_to_close: {qty_to_close}")
     if con_id is None:
         return
     # --- Step 1: get open positions

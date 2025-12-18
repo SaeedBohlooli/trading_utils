@@ -98,7 +98,7 @@ def drop_dupplicates_in_file(file_path, unique_columns=[], keep='last'):
         df.to_csv(file_path, index=False, mode='w')
     return
 
-def save_df_to_csv(df=None, file_path='', mode='w', check_columns: bool = True, tabular: bool= False, drop_dupplicates=True, unique_columns=[]):
+def save_df_to_csv(df=None, file_path='', mode='w', check_columns: bool = True, tabular: bool= False, drop_dupplicates=True, unique_columns=[], keep='last'):
     if df is not None and len(df) == 0:
         logger.warning("save_df_to_csv: Empty df, nothing to save.")
         return
@@ -108,7 +108,7 @@ def save_df_to_csv(df=None, file_path='', mode='w', check_columns: bool = True, 
     if drop_dupplicates:
         if unique_columns == [] and 'unique_id' in df.columns: # it is passeD_empty, but uunique_id is there we add it
             unique_columns = ['unique_id']
-        drop_dupplicates_in_file(file_path, unique_columns=unique_columns)
+        drop_dupplicates_in_file(file_path, unique_columns=unique_columns, keep=keep)
     if tabular:
         write_file_in_tabulate(src_file_path=file_path)
 
