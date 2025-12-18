@@ -43,7 +43,7 @@ DEFAULT_CONFIG = {
 # -----------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "watchdog_config.yaml")
+CONFIG_PATH = os.path.join(BASE_DIR,'..','configs' ,'watchdog_config.yaml')
 
 
 def deep_merge(defaults: dict, overrides: dict) -> dict:
@@ -58,9 +58,11 @@ def deep_merge(defaults: dict, overrides: dict) -> dict:
 
 def load_config() -> dict:
     if not os.path.exists(CONFIG_PATH):
+        print(f"No config file found at {CONFIG_PATH}") # no logger here
         return DEFAULT_CONFIG
 
     try:
+        print(f"Loading config from {CONFIG_PATH}") # no logger here
         with open(CONFIG_PATH, "r") as f:
             data = yaml.safe_load(f) or {}
         return deep_merge(DEFAULT_CONFIG, data)
@@ -168,7 +170,7 @@ def kill_ib_app():
 async def is_ib_api_healthy(
     host="127.0.0.1",
     port=IB_PORT,
-    client_id=IB_API_CLIENT_ID,
+    client_id=IB_API_CLIENT_ID + int(time.time()) % 1000,
     timeout=IB_API_TIMEOUT
 ) -> bool:
     ib = IB()
@@ -236,6 +238,8 @@ def run_watchdog():
                 kill_ib_app()
                 time.sleep(5)
                 start_ib_app()
+                time.sleep(10)
+
                 nu_of_failures = 0
 
             time.sleep(CHECK_INTERVAL)
