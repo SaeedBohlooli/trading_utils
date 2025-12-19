@@ -5,7 +5,7 @@ from trading_utils import ib_positions_async
 
 logger = logging.getLogger(__name__)
 
-def update_application_state_for_positions(ib, application_state):
+def update_application_state_for_ib_positions(ib, application_state):
     """
     Update the application state to reflect a new position.
     """
