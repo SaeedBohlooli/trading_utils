@@ -1,7 +1,8 @@
 import pandas as pd
 import os.path
 import sys
-
+import logging
+logger = logging.getLogger(__name__)
 sys.path.insert(0, f'../')
 from trading_utils import df_utils
 from trading_utils import ib_posttrade
@@ -135,8 +136,13 @@ def do_y(df):
     return summary_df
 
 def orchestrate(portfolio_id='p250'):
-    ib_dir = f'../../portfolios/ib/{portfolio_id}'
-    ib_pnl_dir = f'../../portfolios/ib-pnl/{portfolio_id}'
+
+    if portfolio_id == 'p250':
+        ib_dir = f'../../portfolios/ib/{portfolio_id}'
+        ib_pnl_dir = f'../../portfolios/ib-pnl/{portfolio_id}'
+    else:
+        ib_dir = f'../../portfolios/{portfolio_id}/ib'
+        ib_pnl_dir = f'../../portfolios/{portfolio_id}/ib-pnl'
 
 
 
@@ -147,37 +153,37 @@ def orchestrate(portfolio_id='p250'):
     print(f"executions_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_df, 'execution_time', '00:00').to_markdown()}")
 
     commission_df = ib_posttrade.load_ib_df(ib_dir, 'ib_commission_df')
+
     merged_df = pd.merge(executions_df, commission_df, left_on="execution_execId", right_on="execId", how="left")
 
+    df_utils.save_df_to_csv(merged_df, file_path=f'{ib_pnl_dir}/10-merged_df.csv', tabular=True)
     print('--------------------------')
     print(f"merged_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(merged_df, 'execution_time', '00:00').to_markdown()}")
+
 
     # TODO debug ,,,
     #merged_df = df_utils.capture_df_starting_hour_x_on_last_day(merged_df, 'execution_time', '00:00')
     trades_w_prices_df = extract_trades_with_prices(merged_df)
-    
-    
-    df_utils.save_df_to_csv(trades_w_prices_df, file_path=ib_pnl_dir, tabular=True)
 
+    df_utils.save_df_to_csv(trades_w_prices_df, file_path=f'{ib_pnl_dir}/13-trades_w_prices_df.csv', tabular=True)
     print('--------------------------')
     print(f"trades_w_prices_df \n{trades_w_prices_df[0:].to_markdown()}")
 
     trades_w_roi_df = do_x(trades_w_prices_df)
+
+    df_utils.save_df_to_csv(trades_w_roi_df, file_path=f'{ib_pnl_dir}/16-trades_w_roi_df.csv', tabular=True)
     print('--------------------------')
     print(f"trades_w_roi_df \n{trades_w_roi_df[0:].to_markdown()}")
 
     trades_w_pnl_df = do_y(trades_w_roi_df)
+
+    df_utils.save_df_to_csv(trades_w_pnl_df, file_path=f'{ib_pnl_dir}/19-trades_w_pnl_df.csv', tabular=True)
     print('--------------------------')
     print(f"trades_w_roi_df \n{trades_w_pnl_df[0:].to_markdown()}")
 
 
-    # summarize_trades_df = summarize_trades(merged_df)
-    #
-    # print('--------------------------')
-    # print(f"summarize_trades_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(summarize_trades_df, 'open_time', '00:00').to_markdown()}")
-
-
 if __name__ == "__main__":
-
+    logger.info(f"Starting ib_offline_miscs.py ...")
     portfolio_id = 'p250'
     orchestrate(portfolio_id)
+    logger.info(f"Finished ib_offline_miscs.py ...")
