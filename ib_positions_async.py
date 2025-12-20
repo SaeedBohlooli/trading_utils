@@ -124,13 +124,13 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
         action = "SELL" if position_qty > 0 else "BUY"
 
         if qty_to_close is not None:
-            qty_to_close = min(abs(position_qty), qty_to_close)
+            qty_to_close = min(abs(position_qty), qty_to_close) # we are not closing more than what we have
         else:
             qty_to_close = abs(position_qty)
 
 
 
-        logger.info(f"close_position_async, Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty})")
+        logger.info(f"close_position_async, Closing {symbol}: {action} qty_to_close: {qty_to_close}, position_qty={position_qty}, order_ref: {order_ref}")
 
         # Create a market order
         order = Order(
@@ -147,12 +147,12 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
         trade = ib.placeOrder(pos.contract, order)
         # trade = ib.placeOrder(contract, order)
         trade.fillEvent += ib_posttrade.on_fill
-        logger.info(f"close_position_async, Order sent ....")
+        logger.info(f"close_position_async, Order sent ....order_ref: {order_ref}")
         logger.info(f"close_position_async, trade: {trade}")
 
         return True
 
-    logger.info(f"close_position_async, No position found for symbol={symbol}")
+    logger.warning(f"@@@ close_position_async, No position found for symbol={symbol}, order_ref: {order_ref}")
     return False
 
 def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None):

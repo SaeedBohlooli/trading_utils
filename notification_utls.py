@@ -1,7 +1,7 @@
 import logging
 
 logger = logging.getLogger(__name__)
-from trading_utils import *
+from trading_utils import email_utils
 
 def notify_user(app_config, application_state, msg=None, subject=None):
     logger.info(f"notify_user called with msg: {msg}, subject: {subject}")

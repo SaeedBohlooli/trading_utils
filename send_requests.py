@@ -14,9 +14,9 @@ def get_buy_order_request():
     """
     d = {
       "request_type": "BUY_ORDER",
-      "base_strike": 6735,
+      "base_strike": 6830,
       "user_price": 1,  # less then 1 will be filled out at market price
-      "expiry": "20251218",
+      "expiry": "20251222",
       "web_request_id": "saeed-1",
       "web_timestamp": "2025-12-11 16:44:18",
       "status": "WEB_SENT"
@@ -25,8 +25,8 @@ def get_buy_order_request():
 
 def get_sell_order_request():
     d = {
-        "order_set_id": "SET-20251217-134642-29",  # TODO u need to change it every time
-        "user_price" : -30,
+        "order_set_id": "SET-20251219-130504-22",  # TODO u need to change it every time
+        "user_price" : -5,
         "web_request_id": "100",
         "request_type": "CLOSE_ORDER_SET",
         "memo": "A request from Web to close order ",
@@ -35,7 +35,7 @@ def get_sell_order_request():
     return d
 
 
-d = get_buy_order_request()
+# d = get_buy_order_request()
 d = get_sell_order_request()
 
 url = f"http://{host}:{port}/api/send-request"

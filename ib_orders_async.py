@@ -111,7 +111,7 @@ def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_
     return order_ref
 
 
-async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", order_ref= None, algo_strategy=None, adaptive_priority=None ) :
+async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", order_ref= None, algo_strategy=None, adaptive_priority=None, wait_untill_filled: bool=False ) :
     """
     Place a MARKET order for a given stock symbol.
 
@@ -154,13 +154,14 @@ async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", o
     logger.info(f"Submitted {action} {quantity} {symbol}, orderId={trade.order.orderId}, order_ref: {order_ref}")
 
     # OPTIONAL: wait until it is filled or cancelled
-    while trade.orderStatus.status in ("PendingSubmit", "Submitted"):  # TODO need to be checked for other statuses
-        await asyncio.sleep(0.5)
-        logger.info( f"@@@ Waiting for status update ... order_ref: {order_ref}"
-            f"Order status: {trade.orderStatus.status}, "
-            f"filled={trade.orderStatus.filled}, "
-            f"remaining={trade.orderStatus.remaining}"
-        )
+    if wait_untill_filled:
+        while trade.orderStatus.status in ("PendingSubmit", "Submitted"):  # TODO need to be checked for other statuses
+            await asyncio.sleep(0.5)
+            logger.info( f"@@@ Waiting for status update ... order_ref: {order_ref}"
+                f"Order status: {trade.orderStatus.status}, "
+                f"filled={trade.orderStatus.filled}, "
+                f"remaining={trade.orderStatus.remaining}"
+            )
 
     logger.info(f"Final status: {trade.orderStatus.status}, order_ref: {order_ref}")
     return trade

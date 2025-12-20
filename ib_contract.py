@@ -65,16 +65,19 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     if key in cache:
         return cache[key]
 
+    if trading_class is None:
+        trading_class = "SPXW" if symbol == "SPX" else symbol
+    if exchange is None:
+        exchange = "CBOE" if symbol == "SPX" else "SMART"
+
     # Cache miss → create new contract
     contract = Option(
         symbol=symbol,
         lastTradeDateOrContractMonth=expiry,
         strike=strike,
         right=right,
-        # exchange=exchange,
-        # tradingClass=trading_class,
-        exchange="CBOE" if symbol == "SPX" else "SMART",
-        tradingClass="SPXW" if symbol == "SPX" else symbol
+        exchange=exchange,
+        tradingClass=trading_class,
     )
     # Qualify once (async)
 
