@@ -8,6 +8,7 @@ import logging.handlers
 import os
 import asyncio
 import yaml
+from datetime import datetime, timezone
 from ib_async import IB
 
 # -----------------------------------
@@ -24,6 +25,13 @@ DEFAULT_CONFIG = {
     "watchdog": {
         "check_interval": 60,
         "min_failures_to_restart": 2,
+        "heartbeat": {
+            "enabled": True,
+            "base_dir": "logs/heartbeat",
+            "app_file": "app_heartbeat.log",
+            "ib_file": "ib_heartbeat.log",
+            "max_lag_seconds": 300,  # 5 minutes
+        },
     },
     "ib_api": {
         "client_id": 990,
@@ -93,6 +101,17 @@ LOG_MAX_BYTES = config["logging"]["max_bytes"]
 LOG_BACKUP_COUNT = config["logging"]["backup_count"]
 LOG_LEVEL = getattr(logging, config["logging"]["level"].upper(), logging.INFO)
 
+# ---- HEARTBEAT CONFIG ----
+
+HEARTBEAT_CFG = config["watchdog"]["heartbeat"]
+HEARTBEAT_ENABLED = HEARTBEAT_CFG.get("enabled", True)
+HEARTBEAT_BASE_DIR = os.path.join(BASE_DIR, HEARTBEAT_CFG["base_dir"])
+APP_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HEARTBEAT_CFG["app_file"])
+IB_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HEARTBEAT_CFG["ib_file"])
+HEARTBEAT_MAX_LAG_SECONDS = HEARTBEAT_CFG.get("max_lag_seconds", 300)
+
+os.makedirs(HEARTBEAT_BASE_DIR, exist_ok=True)
+
 # -----------------------------------
 # LOGGING SETUP
 # -----------------------------------
@@ -158,7 +177,53 @@ def kill_ib_app():
 
 
 # -----------------------------------
-# IB API HEALTH CHECK (ASYNC, SIMPLE)
+# HEARTBEAT UTILITIES
+# -----------------------------------
+
+def read_heartbeat_ts(path: str):
+    if not os.path.exists(path):
+        return None
+    try:
+        text = open(path, "r").read().strip()
+        if not text:
+            return None
+        ts = datetime.fromisoformat(text)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        return ts
+    except Exception:
+        return None
+
+
+def is_heartbeat_healthy() -> tuple[bool, str]:
+    if not HEARTBEAT_ENABLED:
+        return True, "heartbeat disabled"
+
+    app_ts = read_heartbeat_ts(APP_HEARTBEAT_FILE)
+    ib_ts = read_heartbeat_ts(IB_HEARTBEAT_FILE)
+
+    if app_ts is None:
+        return False, "app heartbeat missing or invalid"
+
+    if ib_ts is None:
+        return False, "ib heartbeat missing or invalid"
+
+    lag_seconds = (app_ts - ib_ts).total_seconds()
+    if lag_seconds < 0:
+        lag_seconds = 0
+
+    if lag_seconds > HEARTBEAT_MAX_LAG_SECONDS:
+        return (
+            False,
+            f"heartbeat lag {int(lag_seconds)}s > {HEARTBEAT_MAX_LAG_SECONDS}s "
+            f"(app={app_ts.isoformat()}, ib={ib_ts.isoformat()})"
+        )
+
+    return True, f"heartbeat OK (lag={int(lag_seconds)}s)"
+
+
+# -----------------------------------
+# IB API HEALTH CHECK (ASYNC)
 # -----------------------------------
 
 async def is_ib_api_healthy(
@@ -184,20 +249,20 @@ async def is_ib_api_healthy(
             ib.reqCurrentTimeAsync(),
             timeout=timeout,
         )
-        logger.info(f"IB API connected to {host}:{port} ... sleep for 10 sec")
-        await asyncio.sleep(10)
+
         return True
 
     except Exception as e:
-        logger.error(f"error:{e}")
+        logger.error(f"IB API error: {e}")
         return False
 
     finally:
         try:
             if ib.isConnected():
                 ib.disconnect()
-        except Exception as e:
-            logger.error(f"error: {e}")
+        except Exception:
+            pass
+
 
 # -----------------------------------
 # MAIN WATCHDOG (ASYNC)
@@ -214,18 +279,22 @@ async def run_watchdog():
             process_alive = is_process_running(PROCESS_NAME)
             port_open = is_port_open(IB_PORT)
             ib_api_ok = await is_ib_api_healthy()
+            heartbeat_ok, heartbeat_msg = is_heartbeat_healthy()
 
             logger.info(
                 f"Health process_alive={process_alive}, "
-                f"port_open={port_open}, ib_api_ok={ib_api_ok}"
+                f"port_open={port_open}, ib_api_ok={ib_api_ok}, "
+                f"heartbeat_ok={heartbeat_ok} | {heartbeat_msg}"
             )
 
-            # FAILURE CONDITION (YOUR FINAL RULE)
-            if not port_open and not ib_api_ok:
+            # FAILURE CONDITION
+            if (not port_open and not ib_api_ok) or not heartbeat_ok:
                 nu_of_failures += 1
                 logger.error(
-                    f"Failure detected port_open={port_open}, "
+                    f"Failure detected "
+                    f"port_open={port_open}, "
                     f"ib_api_ok={ib_api_ok}, "
+                    f"heartbeat_ok={heartbeat_ok}, "
                     f"count={nu_of_failures}"
                 )
             else:
@@ -235,11 +304,9 @@ async def run_watchdog():
             if nu_of_failures >= MIN_FAILURE_NEEDED_TO_RESTART:
                 logger.warning("Restarting IB application")
                 kill_ib_app()
-
                 await asyncio.sleep(5)
                 start_ib_app()
                 await asyncio.sleep(10)
-
                 nu_of_failures = 0
 
             await asyncio.sleep(CHECK_INTERVAL)
