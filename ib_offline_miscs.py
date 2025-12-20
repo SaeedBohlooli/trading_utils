@@ -147,6 +147,9 @@ def orchestrate(portfolio_id='p250'):
     os.makedirs(ib_pnl_dir, exist_ok=True)
 
     executions_df = ib_posttrade.load_ib_df(ib_dir, 'ib_on_fill_fill_df')
+    if len(executions_df) == 0:
+        logger.warning(f"executions_df is empty, exiting ...")
+        return
     executions_df = polish_executions_df(executions_df)
 
     print('--------------------------')
@@ -154,16 +157,16 @@ def orchestrate(portfolio_id='p250'):
 
     commission_df = ib_posttrade.load_ib_df(ib_dir, 'ib_commission_df')
 
-    execution_w_pnl_df = pd.merge(executions_df, commission_df, left_on="execution_execId", right_on="execId", how="left")
+    executions_w_pnl_df = pd.merge(executions_df, commission_df, left_on="execution_execId", right_on="execId", how="left")
 
-    df_utils.save_df_to_csv(execution_w_pnl_df, file_path=f'{ib_pnl_dir}/10-execution_w_pnl_df.csv', tabular=True)
+    df_utils.save_df_to_csv(executions_w_pnl_df, file_path=f'{ib_pnl_dir}/10-executions_w_pnl_df.csv', tabular=True)
     print('--------------------------')
-    print(f"execution_w_pnl_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(execution_w_pnl_df, 'execution_time', '00:00').to_markdown()}")
+    print(f"executions_w_pnl_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_w_pnl_df, 'execution_time', '00:00').to_markdown()}")
 
 
     # TODO debug ,,,
-    #execution_w_pnl_df = df_utils.capture_df_starting_hour_x_on_last_day(execution_w_pnl_df, 'execution_time', '00:00')
-    trades_w_prices_df = extract_trades_with_prices(execution_w_pnl_df)
+    #executions_w_pnl_df = df_utils.capture_df_starting_hour_x_on_last_day(executions_w_pnl_df, 'execution_time', '00:00')
+    trades_w_prices_df = extract_trades_with_prices(executions_w_pnl_df)
 
     df_utils.save_df_to_csv(trades_w_prices_df, file_path=f'{ib_pnl_dir}/13-trades_w_prices_df.csv', tabular=True)
     print('--------------------------')
