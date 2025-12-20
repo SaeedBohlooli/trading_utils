@@ -30,7 +30,19 @@ DEFAULT_CONFIG = {
             "base_dir": "logs/heartbeat",
             "app_file": "app_heartbeat.log",
             "ib_file": "ib_heartbeat.log",
-            "max_lag_seconds": 300,  # 5 minutes
+            "max_lag_seconds": 300,
+        },
+        "health": {
+            "components": {
+                "process": True,
+                "port": True,
+                "api": True,
+                "heartbeat": True,
+            },
+            "failure_rules": [
+                ["port", "api"],
+                ["heartbeat"],
+            ],
         },
     },
     "ib_api": {
@@ -70,7 +82,6 @@ def load_config() -> dict:
         return DEFAULT_CONFIG
 
     try:
-        print(f"Loading config from {CONFIG_PATH}")
         with open(CONFIG_PATH, "r") as f:
             data = yaml.safe_load(f) or {}
         return deep_merge(DEFAULT_CONFIG, data)
@@ -103,14 +114,16 @@ LOG_LEVEL = getattr(logging, config["logging"]["level"].upper(), logging.INFO)
 
 # ---- HEARTBEAT CONFIG ----
 
-HEARTBEAT_CFG = config["watchdog"]["heartbeat"]
-HEARTBEAT_ENABLED = HEARTBEAT_CFG.get("enabled", True)
-HEARTBEAT_BASE_DIR = os.path.join(BASE_DIR, HEARTBEAT_CFG["base_dir"])
-APP_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HEARTBEAT_CFG["app_file"])
-IB_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HEARTBEAT_CFG["ib_file"])
-HEARTBEAT_MAX_LAG_SECONDS = HEARTBEAT_CFG.get("max_lag_seconds", 300)
+HB_CFG = config["watchdog"]["heartbeat"]
+HEARTBEAT_ENABLED = HB_CFG.get("enabled", True)
+HEARTBEAT_BASE_DIR = os.path.join(BASE_DIR, HB_CFG["base_dir"])
+APP_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HB_CFG["app_file"])
+IB_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HB_CFG["ib_file"])
+HEARTBEAT_MAX_LAG_SECONDS = HB_CFG.get("max_lag_seconds", 300)
 
 os.makedirs(HEARTBEAT_BASE_DIR, exist_ok=True)
+
+HEALTH_CFG = config["watchdog"]["health"]
 
 # -----------------------------------
 # LOGGING SETUP
@@ -140,7 +153,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # -----------------------------------
-# UTILITY FUNCTIONS
+# UTILITIES
 # -----------------------------------
 
 def is_process_running(name: str) -> bool:
@@ -177,85 +190,73 @@ def kill_ib_app():
 
 
 # -----------------------------------
-# HEARTBEAT UTILITIES
+# HEARTBEAT
 # -----------------------------------
 
 def read_heartbeat_ts(path: str):
     if not os.path.exists(path):
         return None
     try:
-        text = open(path, "r").read().strip()
-        if not text:
-            return None
-        ts = datetime.fromisoformat(text)
-        if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
-        return ts
+        ts = datetime.fromisoformat(open(path).read().strip())
+        return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
     except Exception:
         return None
 
 
-def is_heartbeat_healthy() -> tuple[bool, str]:
+def is_heartbeat_healthy() -> bool:
     if not HEARTBEAT_ENABLED:
-        return True, "heartbeat disabled"
+        return True
 
     app_ts = read_heartbeat_ts(APP_HEARTBEAT_FILE)
     ib_ts = read_heartbeat_ts(IB_HEARTBEAT_FILE)
 
-    if app_ts is None:
-        return False, "app heartbeat missing or invalid"
+    if not app_ts or not ib_ts:
+        return False
 
-    if ib_ts is None:
-        return False, "ib heartbeat missing or invalid"
-
-    lag_seconds = (app_ts - ib_ts).total_seconds()
-    if lag_seconds < 0:
-        lag_seconds = 0
-
-    if lag_seconds > HEARTBEAT_MAX_LAG_SECONDS:
-        return (
-            False,
-            f"heartbeat lag {int(lag_seconds)}s > {HEARTBEAT_MAX_LAG_SECONDS}s "
-            f"(app={app_ts.isoformat()}, ib={ib_ts.isoformat()})"
-        )
-
-    return True, f"heartbeat OK (lag={int(lag_seconds)}s)"
+    lag = (app_ts - ib_ts).total_seconds()
+    return lag <= HEARTBEAT_MAX_LAG_SECONDS
 
 
 # -----------------------------------
-# IB API HEALTH CHECK (ASYNC)
+# HEALTH RULE ENGINE (CONFIG-DRIVEN)
 # -----------------------------------
 
-async def is_ib_api_healthy(
-    host="127.0.0.1",
-    port=IB_PORT,
-    timeout=IB_API_TIMEOUT,
-) -> bool:
+def evaluate_health(results: dict, health_cfg: dict) -> tuple[bool, str]:
+    enabled = health_cfg.get("components", {})
+    rules = health_cfg.get("failure_rules", [])
+
+    active = {
+        k: v for k, v in results.items()
+        if enabled.get(k, False)
+    }
+
+    for rule in rules:
+        if all(not active.get(comp, True) for comp in rule):
+            return False, f"failure rule triggered: {rule}"
+
+    return True, "health OK"
+
+
+# -----------------------------------
+# IB API HEALTH CHECK
+# -----------------------------------
+
+async def is_ib_api_healthy() -> bool:
     ib = IB()
     client_id = IB_API_CLIENT_ID + (int(time.time()) % 1000)
 
     try:
         await asyncio.wait_for(
-            ib.connectAsync(
-                host=host,
-                port=port,
-                clientId=client_id,
-                readonly=True,
-            ),
-            timeout=timeout,
+            ib.connectAsync("127.0.0.1", IB_PORT, clientId=client_id, readonly=True),
+            timeout=IB_API_TIMEOUT,
         )
-
         await asyncio.wait_for(
             ib.reqCurrentTimeAsync(),
-            timeout=timeout,
+            timeout=IB_API_TIMEOUT,
         )
-
         return True
-
-    except Exception as e:
-        logger.error(f"IB API error: {e}")
+    except Exception:
         return False
-
     finally:
         try:
             if ib.isConnected():
@@ -265,54 +266,48 @@ async def is_ib_api_healthy(
 
 
 # -----------------------------------
-# MAIN WATCHDOG (ASYNC)
+# MAIN WATCHDOG LOOP
 # -----------------------------------
 
 async def run_watchdog():
-    logger.info("Starting IB watchdog (async)")
-    nu_of_failures = 0
+    logger.info("Starting IB watchdog")
+    failures = 0
 
     while True:
         try:
-            logger.info("============================")
+            process_ok = is_process_running(PROCESS_NAME)
+            port_ok = is_port_open(IB_PORT)
+            api_ok = await is_ib_api_healthy()
+            heartbeat_ok = is_heartbeat_healthy()
 
-            process_alive = is_process_running(PROCESS_NAME)
-            port_open = is_port_open(IB_PORT)
-            ib_api_ok = await is_ib_api_healthy()
-            heartbeat_ok, heartbeat_msg = is_heartbeat_healthy()
+            results = {
+                "process": process_ok,
+                "port": port_ok,
+                "api": api_ok,
+                "heartbeat": heartbeat_ok,
+            }
 
-            logger.info(
-                f"Health process_alive={process_alive}, "
-                f"port_open={port_open}, ib_api_ok={ib_api_ok}, "
-                f"heartbeat_ok={heartbeat_ok} | {heartbeat_msg}"
-            )
+            health_ok, health_msg = evaluate_health(results, HEALTH_CFG)
 
-            # FAILURE CONDITION
-            if (not port_open and not ib_api_ok) or not heartbeat_ok:
-                nu_of_failures += 1
-                logger.error(
-                    f"Failure detected "
-                    f"port_open={port_open}, "
-                    f"ib_api_ok={ib_api_ok}, "
-                    f"heartbeat_ok={heartbeat_ok}, "
-                    f"count={nu_of_failures}"
-                )
+            logger.info(f"Health={results} | {health_msg}")
+
+            if not health_ok:
+                failures += 1
+                logger.error(f"Failure detected count={failures}")
             else:
-                nu_of_failures = 0
-                logger.info("No failure condition met")
+                failures = 0
 
-            if nu_of_failures >= MIN_FAILURE_NEEDED_TO_RESTART:
+            if failures >= MIN_FAILURE_NEEDED_TO_RESTART:
                 logger.warning("Restarting IB application")
                 kill_ib_app()
                 await asyncio.sleep(5)
                 start_ib_app()
                 await asyncio.sleep(10)
-                nu_of_failures = 0
+                failures = 0
 
             await asyncio.sleep(CHECK_INTERVAL)
 
-        except Exception as e:
-            logger.error(e)
+        except Exception:
             logger.error(traceback.format_exc())
             await asyncio.sleep(CHECK_INTERVAL)
 
