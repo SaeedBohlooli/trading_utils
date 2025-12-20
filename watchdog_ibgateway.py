@@ -78,56 +78,38 @@ def deep_merge(defaults: dict, overrides: dict) -> dict:
 
 def load_config() -> dict:
     if not os.path.exists(CONFIG_PATH):
-        print(f"No config file found at {CONFIG_PATH}")
         return DEFAULT_CONFIG
 
     try:
         with open(CONFIG_PATH, "r") as f:
             data = yaml.safe_load(f) or {}
         return deep_merge(DEFAULT_CONFIG, data)
-    except Exception as e:
-        print(f"Failed to load config, using defaults: {e}")
+    except Exception:
         return DEFAULT_CONFIG
 
 
-config = load_config()
+# -----------------------------------
+# INITIAL CONFIG (STATIC PARTS)
+# -----------------------------------
 
-# -----------------------------------
-# EXTRACT CONFIG
-# -----------------------------------
+config = load_config()
 
 IB_PORT = config["ib_app"]["port"]
 PROCESS_NAME = config["ib_app"]["process_name"]
 START_SCRIPT = config["ib_app"]["start_script"]
 
-CHECK_INTERVAL = config["watchdog"]["check_interval"]
-MIN_FAILURE_NEEDED_TO_RESTART = config["watchdog"]["min_failures_to_restart"]
-
 IB_API_CLIENT_ID = config["ib_api"]["client_id"]
 IB_API_TIMEOUT = config["ib_api"]["timeout"]
+
+# -----------------------------------
+# LOGGING SETUP (STATIC)
+# -----------------------------------
 
 LOG_BASE_DIR = config["logging"]["base_dir"]
 LOG_FILE_NAME = config["logging"]["file_name"]
 LOG_MAX_BYTES = config["logging"]["max_bytes"]
 LOG_BACKUP_COUNT = config["logging"]["backup_count"]
 LOG_LEVEL = getattr(logging, config["logging"]["level"].upper(), logging.INFO)
-
-# ---- HEARTBEAT CONFIG ----
-
-HB_CFG = config["watchdog"]["heartbeat"]
-HEARTBEAT_ENABLED = HB_CFG.get("enabled", True)
-HEARTBEAT_BASE_DIR = os.path.join(BASE_DIR, HB_CFG["base_dir"])
-APP_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HB_CFG["app_file"])
-IB_HEARTBEAT_FILE = os.path.join(HEARTBEAT_BASE_DIR, HB_CFG["ib_file"])
-HEARTBEAT_MAX_LAG_SECONDS = HB_CFG.get("max_lag_seconds", 300)
-
-os.makedirs(HEARTBEAT_BASE_DIR, exist_ok=True)
-
-HEALTH_CFG = config["watchdog"]["health"]
-
-# -----------------------------------
-# LOGGING SETUP
-# -----------------------------------
 
 log_dir = os.path.join(BASE_DIR, LOG_BASE_DIR)
 os.makedirs(log_dir, exist_ok=True)
@@ -180,7 +162,7 @@ def start_ib_app():
 
 
 def kill_ib_app():
-    logger.warning("Killing IB application process")
+    logger.warning("Killing IB application")
     for proc in psutil.process_iter(["name"]):
         try:
             if proc.info["name"] and PROCESS_NAME.lower() in proc.info["name"].lower():
@@ -203,22 +185,28 @@ def read_heartbeat_ts(path: str):
         return None
 
 
-def is_heartbeat_healthy() -> bool:
-    if not HEARTBEAT_ENABLED:
+def is_heartbeat_healthy_from_cfg(hb_cfg: dict) -> bool:
+    if not hb_cfg.get("enabled", True):
         return True
 
-    app_ts = read_heartbeat_ts(APP_HEARTBEAT_FILE)
-    ib_ts = read_heartbeat_ts(IB_HEARTBEAT_FILE)
+    base_dir = os.path.join(BASE_DIR, hb_cfg["base_dir"])
+    os.makedirs(base_dir, exist_ok=True)
+
+    app_file = os.path.join(base_dir, hb_cfg["app_file"])
+    ib_file = os.path.join(base_dir, hb_cfg["ib_file"])
+    max_lag = hb_cfg.get("max_lag_seconds", 300)
+
+    app_ts = read_heartbeat_ts(app_file)
+    ib_ts = read_heartbeat_ts(ib_file)
 
     if not app_ts or not ib_ts:
         return False
 
-    lag = (app_ts - ib_ts).total_seconds()
-    return lag <= HEARTBEAT_MAX_LAG_SECONDS
+    return (app_ts - ib_ts).total_seconds() <= max_lag
 
 
 # -----------------------------------
-# HEALTH RULE ENGINE (CONFIG-DRIVEN)
+# HEALTH RULE ENGINE
 # -----------------------------------
 
 def evaluate_health(results: dict, health_cfg: dict) -> tuple[bool, str]:
@@ -266,28 +254,34 @@ async def is_ib_api_healthy() -> bool:
 
 
 # -----------------------------------
-# MAIN WATCHDOG LOOP
+# MAIN WATCHDOG LOOP (HOT RELOAD)
 # -----------------------------------
 
 async def run_watchdog():
-    logger.info("Starting IB watchdog")
+    logger.info("Starting IB watchdog (config hot-reload enabled)")
     failures = 0
 
     while True:
         try:
-            process_ok = is_process_running(PROCESS_NAME)
-            port_ok = is_port_open(IB_PORT)
-            api_ok = await is_ib_api_healthy()
-            heartbeat_ok = is_heartbeat_healthy()
+            # 🔄 Reload config every loop
+            config = load_config()
 
+            wd_cfg = config["watchdog"]
+            CHECK_INTERVAL = wd_cfg.get("check_interval", 60)
+            MIN_FAILURE_NEEDED_TO_RESTART = wd_cfg.get("min_failures_to_restart", 2)
+
+            heartbeat_cfg = wd_cfg.get("heartbeat", {})
+            health_cfg = wd_cfg.get("health", {})
+
+            # Run checks
             results = {
-                "process": process_ok,
-                "port": port_ok,
-                "api": api_ok,
-                "heartbeat": heartbeat_ok,
+                "process": is_process_running(PROCESS_NAME),
+                "port": is_port_open(IB_PORT),
+                "api": await is_ib_api_healthy(),
+                "heartbeat": is_heartbeat_healthy_from_cfg(heartbeat_cfg),
             }
 
-            health_ok, health_msg = evaluate_health(results, HEALTH_CFG)
+            health_ok, health_msg = evaluate_health(results, health_cfg)
 
             logger.info(f"Health={results} | {health_msg}")
 
@@ -309,7 +303,7 @@ async def run_watchdog():
 
         except Exception:
             logger.error(traceback.format_exc())
-            await asyncio.sleep(CHECK_INTERVAL)
+            await asyncio.sleep(30)
 
 
 # -----------------------------------
