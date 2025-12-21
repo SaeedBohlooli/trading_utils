@@ -128,6 +128,7 @@ handler.setFormatter(formatter)
 
 logging.basicConfig(
     level=LOG_LEVEL,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[handler, logging.StreamHandler()],
 )
 
@@ -158,6 +159,7 @@ def is_port_open(port: int) -> bool:
 def start_ib_app():
     logger.warning("Starting IB application")
     subprocess.Popen(START_SCRIPT, shell=True)
+    logger.warning("IB application started")
 
 
 def kill_ib_app():

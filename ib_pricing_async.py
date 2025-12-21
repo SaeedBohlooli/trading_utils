@@ -301,6 +301,10 @@ def get_all_quotes_as_df():
     df = pd.DataFrame(list(quotes.values()))  #  {con_id: {}}
     return df
 
+def get_all_quotes_as_dic():
+    quotes = global_state.quote_cache
+    return quotes
+
 async def XXXXunsubscribe_contract(ib, contract):
     if contract is None:
         logger.warning("@@@ [ERROR] unsubscribe_contract: contract is None — skipping")
