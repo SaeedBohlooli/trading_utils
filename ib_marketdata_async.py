@@ -30,6 +30,7 @@ async def get_stock_historical_data(
     max_retries: int = 5,
     retry_delay: float = 2.0,
     what_to_show: str = "TRADES",
+    contract_month: str = None  # used only for MNQ futures
 ):
     """
     Fetch historical data ending at `end_date` (optional)
@@ -47,10 +48,13 @@ async def get_stock_historical_data(
 
     use_cache = False
     if use_cache:
-        contract = await ib_contract.get_cached_contract(ib, symbol)
+        contract = await ib_contract.get_cached_contract(ib, symbol, contract_month=contract_month)
     else:
         logger.info(f"get_stock_historical_data: Caching disabled.")
-        contract = Stock(symbol, "SMART", "USD")
+        if symbol == "MNQ":
+            contract = Future('MNQ', contract_month, 'CME')
+        else:
+            contract = Stock(symbol, "SMART", "USD")
 
     # Prepare contract
     logger.info(f"Fetching historical data for {symbol}, timeframe: {time_frame}, duration: {duration}, end_date: {end_date}, contract: {contract}")
@@ -91,7 +95,9 @@ async def get_stock_historical_data(
     # Convert results → DataFrame
     logger.info(f"Fetched {len(bars)} bars for {symbol}")
     df = util.df(bars)
-
+    if df is None:
+        logger.warning(f"@@@@@@ get_stock_historical_data: df is None for symbol: {symbol}")
+        return pd.DataFrame()
     if df.empty:
         return df
 

@@ -158,11 +158,23 @@ async def get_quote_for_contracts_ver_2(ib, contracts):
 
 
 
-async def subscribe_symbol_once(ib, symbol, secType="STK", exchange="SMART", currency="USD"):
+async def subscribe_symbol(ib, symbol, secType= None, exchange= None, currency=None, contract_month=None):
     """
     General purpose subscription for any stock/index/future/crypto.
     Example: TSLA, AMD, SPX, NDX, MSFT, AAPL, NVDA
     """
+    if secType is None:
+        # try to infer from registry
+        reg = global_state.symbol_registry.get(symbol)
+        if reg is not None:
+            secType = reg.get("secType")
+            exchange = reg.get("exchange", exchange)
+            currency = reg.get("currency", currency)
+        else:
+            # it is STK by default
+            secType = "STK"
+            exchange = "SMART"
+            currency = "USD"
 
     if secType == "IND":
         contract = Index(symbol=symbol, exchange=exchange, currency=currency)
@@ -170,7 +182,7 @@ async def subscribe_symbol_once(ib, symbol, secType="STK", exchange="SMART", cur
         contract = Stock(symbol, exchange, currency)
     elif secType == "FUT":
         # You can refine this later
-        contract = Future(symbol=symbol, exchange=exchange, currency=currency)
+        contract = Future(symbol=symbol, exchange=exchange, currency=currency, lastTradeDateOrContractMonth=contract_month)
     else:
         raise Exception(f"Unsupported secType: {secType}")
 
@@ -192,15 +204,15 @@ async def subscribe_symbol_once(ib, symbol, secType="STK", exchange="SMART", cur
 
     return ticker
 
-def get_latest_price(symbol, fallback=True):
+async def get_or_subscribe_symbol_price(ib, symbol, contract_month=None):
     """
     Returns best available price (last > bid > ask) for any subscribed symbol.
     """
     con_id = global_state.symbol_to_conid.get(symbol)
 
     if con_id is None:
-        logger.warning(f"@@ get_latest_price: Symbol {symbol} not subscribed")
-        return None
+        await subscribe_symbol(ib, symbol, contract_month=contract_month)
+        # return None
 
     q = global_state.quote_cache.get(con_id)
     if q is None:
@@ -215,7 +227,7 @@ def get_latest_price(symbol, fallback=True):
     if valid(last): return last
     if valid(bid): return bid
     if valid(ask): return ask
-
+    logger.info(f"@@ get_latest_price: No valid price (last, bid, ask) for {symbol}")
     return None
 
 

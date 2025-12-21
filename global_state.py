@@ -29,3 +29,16 @@ contract_cache = {}     # symbol -> fully qualified contract object
 
 
 option_contract_cache = {}  # symbol+expiry+strike+right -> fully qualified contract object"
+
+symbol_registry = {
+    "SPX": {
+        "secType": "IND",
+        "exchange": "CBOE",
+        "currency": "USD",
+    },
+    "MNQ": {
+        "secType": "FUT",
+        "exchange": "CME",
+        "currency": "USD",
+    }
+}

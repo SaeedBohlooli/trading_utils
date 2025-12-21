@@ -1,11 +1,11 @@
-from ib_async import IB, Contract, Stock, Option
+from ib_async import IB, Contract, Stock, Option, Future
 import logging
 from trading_utils import global_state
 
 logger = logging.getLogger(__name__)
 
 
-async def get_cached_contract(ib: IB, symbol: str) -> Contract:
+async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contract:
     """
     Return a fully-qualified IB contract for `symbol`, using global_state.contract_cache.
     - First call for a symbol: creates + qualifies + caches the contract.
@@ -21,7 +21,10 @@ async def get_cached_contract(ib: IB, symbol: str) -> Contract:
 
     logger.info(f"[CONTRACT_CACHE] Qualifying new contract for symbol={symbol}")
 
-    contract = Stock(symbol, "SMART", "USD")
+    if symbol == 'MNQ':
+        contract = Future('MNQ', contract_month, 'CME')
+    else:
+        contract = Stock(symbol, "SMART", "USD")
 
     # Qualify once (async)
     qualified = await ib.qualifyContractsAsync(contract)
