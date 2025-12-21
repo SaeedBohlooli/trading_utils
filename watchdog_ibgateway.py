@@ -34,10 +34,10 @@ DEFAULT_CONFIG = {
         },
         "health": {
             "components": {
-                "process": True,
-                "port": True,
-                "api": True,
-                "heartbeat": True,
+                "process": {"active": True},
+                "port": {"active": True},
+                "api": {"active": True},
+                "heartbeat": {"active": True},
             },
             "failure_rules": [
                 ["port", "api"],
@@ -124,7 +124,6 @@ handler = logging.handlers.RotatingFileHandler(
 formatter = logging.Formatter(
     "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
 handler.setFormatter(formatter)
 
 logging.basicConfig(
@@ -179,13 +178,17 @@ def read_heartbeat_ts(path: str):
     if not os.path.exists(path):
         return None
     try:
-        ts = datetime.fromisoformat(open(path).read().strip())
+        ts = datetime.fromisoformat(open(path, "r").read().strip())
         return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
     except Exception:
         return None
 
 
 def is_heartbeat_healthy_from_cfg(hb_cfg: dict) -> bool:
+    """
+    Heartbeat check can also be disabled via watchdog.heartbeat.enabled
+    in addition to health.components.heartbeat.active
+    """
     if not hb_cfg.get("enabled", True):
         return True
 
@@ -206,20 +209,39 @@ def is_heartbeat_healthy_from_cfg(hb_cfg: dict) -> bool:
 
 
 # -----------------------------------
-# HEALTH RULE ENGINE
+# HEALTH RULE ENGINE (active flags)
 # -----------------------------------
 
+def _is_component_active(components_cfg: dict, name: str) -> bool:
+    """
+    supports:
+      components:
+        process: {active: true}
+    """
+    item = components_cfg.get(name, {})
+    if isinstance(item, dict):
+        return bool(item.get("active", False))
+    # backward compatibility if someone sets process: true/false
+    return bool(item)
+
+
 def evaluate_health(results: dict, health_cfg: dict) -> tuple[bool, str]:
-    enabled = health_cfg.get("components", {})
+    components_cfg = health_cfg.get("components", {})
     rules = health_cfg.get("failure_rules", [])
 
-    active = {
+    # Only consider active components
+    active_results = {
         k: v for k, v in results.items()
-        if enabled.get(k, False)
+        if _is_component_active(components_cfg, k)
     }
 
+    # OR of AND rules: a rule triggers failure if ALL comps in it are active AND failed
     for rule in rules:
-        if all(not active.get(comp, True) for comp in rule):
+        # if rule references a component that's inactive, we treat rule as not applicable
+        if any(not _is_component_active(components_cfg, comp) for comp in rule):
+            continue
+
+        if all(not active_results.get(comp, True) for comp in rule):
             return False, f"failure rule triggered: {rule}"
 
     return True, "health OK"
@@ -266,19 +288,25 @@ async def run_watchdog():
             # 🔄 Reload config every loop
             config = load_config()
 
-            wd_cfg = config["watchdog"]
+            wd_cfg = config.get("watchdog", {})
             CHECK_INTERVAL = wd_cfg.get("check_interval", 60)
             MIN_FAILURE_NEEDED_TO_RESTART = wd_cfg.get("min_failures_to_restart", 2)
 
             heartbeat_cfg = wd_cfg.get("heartbeat", {})
             health_cfg = wd_cfg.get("health", {})
+            components_cfg = health_cfg.get("components", {})
 
-            # Run checks
+            # Run checks ONLY if active; otherwise set to True (neutral)
+            process_ok = is_process_running(PROCESS_NAME) if _is_component_active(components_cfg, "process") else True
+            port_ok = is_port_open(IB_PORT) if _is_component_active(components_cfg, "port") else True
+            api_ok = await is_ib_api_healthy() if _is_component_active(components_cfg, "api") else True
+            heartbeat_ok = is_heartbeat_healthy_from_cfg(heartbeat_cfg) if _is_component_active(components_cfg, "heartbeat") else True
+
             results = {
-                "process": is_process_running(PROCESS_NAME),
-                "port": is_port_open(IB_PORT),
-                "api": await is_ib_api_healthy(),
-                "heartbeat": is_heartbeat_healthy_from_cfg(heartbeat_cfg),
+                "process": process_ok,
+                "port": port_ok,
+                "api": api_ok,
+                "heartbeat": heartbeat_ok,
             }
 
             health_ok, health_msg = evaluate_health(results, health_cfg)
