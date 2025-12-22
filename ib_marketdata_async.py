@@ -30,7 +30,8 @@ async def get_stock_historical_data(
     max_retries: int = 5,
     retry_delay: float = 2.0,
     what_to_show: str = "TRADES",
-    contract_month: str = None  # used only for MNQ futures
+    contract_month: str = None,  # used only for MNQ futures,
+    use_RTH: bool = True # True is faster no extra work by IB to trim bars to RTH
 ):
     """
     Fetch historical data ending at `end_date` (optional)
@@ -46,7 +47,7 @@ async def get_stock_historical_data(
     if duration is None:
         duration = DEFAULT_DURATION_MAP[time_frame]
 
-    use_cache = False
+    use_cache = True
     if use_cache:
         contract = await ib_contract.get_cached_contract(ib, symbol, contract_month=contract_month)
     else:
@@ -77,7 +78,7 @@ async def get_stock_historical_data(
                 durationStr=duration,         # <--- goes backwards from endDate
                 barSizeSetting=ib_timeframe,
                 whatToShow=what_to_show, # or 'MIDPOINT', 'ASK', 'BID', 'ADJUSTED_LAST'. TRADES is typical for stocks but is slowest. go for MIDPOINT for faster data if no need to bars and volume
-                useRTH=True, # Use Regular Trading Hours # useRTH=True = IB trims bars, extra server work → slower.
+                useRTH=use_RTH, # Use Regular Trading Hours # useRTH=True = IB trims bars, extra server work → slower.
                 keepUpToDate=False,
             )
             break  # success
