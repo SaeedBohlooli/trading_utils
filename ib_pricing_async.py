@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 import time
 from trading_utils import date_utils
 from trading_utils import global_state
+from trading_utils import ib_contract
 import numpy as np
 import math
 
@@ -209,6 +210,7 @@ async def get_or_subscribe_symbol_price(ib, symbol, contract_month=None):
     Returns best available price (last > bid > ask) for any subscribed symbol.
     """
     con_id = global_state.symbol_to_conid.get(symbol)
+    logger.info(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}")
 
     if con_id is None:
         await subscribe_symbol(ib, symbol, contract_month=contract_month)
@@ -218,7 +220,8 @@ async def get_or_subscribe_symbol_price(ib, symbol, contract_month=None):
     if q is None:
         logger.warning(f"@@ get_latest_price: No quote yet for {symbol}")
         return None
-
+    else:
+        logger.info(f"@@ get_latest_price: quote for {symbol}: {q}")
     last = q.get("last")
     bid  = q.get("bid")
     ask  = q.get("ask")
@@ -293,6 +296,29 @@ async def subscribe_contracts_to_market_data(ib, contracts):
     logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
     return
 
+async def get_and_subscribe_option_price(ib, symbol=None, expiry=None,strike=None, right=None):
+    contract = await ib_contract.get_option_contract_cached(ib, symbol, expiry, strike, right)
+    if contract is None:
+        logger.warning(f"get_or_subscribe_symbol_price: contract is None for symbol: {symbol}, expiry: {expiry}, strike: {strike}, right: {right}")
+        return np.nan, np.nan, np.nan
+    await subscribe_contracts_to_market_data(ib, [contract])
+
+    option_contrat = await ib_contract.get_option_contract_cached(ib, symbol, expiry, strike, right)
+    bid, ask, last = get_bid_ask_last_for_c_id(option_contrat.conId)
+    return bid, ask, last
+
+
+
+
+def get_bid_ask_last_for_c_id(con_id):
+    quotes = global_state.quote_cache
+    q = quotes.get(con_id)
+    if q is None:
+        return None, None, None
+    bid = q.get("bid")
+    ask = q.get("ask")
+    last = q.get("last")
+    return bid, ask, last
 
 def get_all_quotes_as_df():
     quotes = global_state.quote_cache

@@ -6,7 +6,6 @@ import time
 import math
 import pandas as pd
 import pprint
-from ib_insync import IB
 from trading_utils import date_utils
 import logging
 
@@ -19,7 +18,7 @@ from trading_utils import ib_posttrade
 
 logger = logging.getLogger(__name__)
 
-
+# TODO in 102 change to place_multi_leg_option_order
 def send_order(ib, legs, total_quantity, root_symbol, order_ref):
     # Combo Contract
     butterfly = Contract(
@@ -86,6 +85,28 @@ async def place_single_leg_option_order(ib, symbol=None, expiry=0, strike=0, rig
 
     return trade
 
+async def submit_prequalified_option_order(ib, q_contract, side, total_quantity=0, order_ref=None):
+    # Combo Contract
+
+
+    action = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL'
+
+
+    print("Qualified:", q_contract)
+
+    order = MarketOrder(action, totalQuantity=total_quantity)
+    logger.info(f"TODO {order}")
+    if order_ref:
+        order.orderRef = order_ref
+
+
+    trade = ib.placeOrder(q_contract, order)
+    trade.fillEvent += ib_posttrade.on_fill
+
+    logger.info(f"Order sent ....")
+    logger.info(f"trade: {trade}")
+
+    return trade
 
 
 def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_run_number=None, right= None, alias=None):
@@ -110,7 +131,7 @@ def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_
 
     return order_ref
 
-
+# in 106 change to place_stock_order
 async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", order_ref= None, algo_strategy=None, adaptive_priority=None, wait_untill_filled: bool=False ) :
     """
     Place a MARKET order for a given stock symbol.
@@ -181,7 +202,6 @@ async def get_open_orders(ib: IB):
 
 
 
-logger = logging.getLogger(__name__)
 
 async def convert_open_orders_to_dict(ib: IB):
     out = []
@@ -272,11 +292,6 @@ async def convert_open_orders_to_dict(ib: IB):
 
 
 # trading_utils/ib_orders_async.py
-
-from ib_insync import IB
-import logging
-
-logger = logging.getLogger(__name__)
 
 async def cancel_open_order(ib: IB, order_id: int) -> bool:
     """

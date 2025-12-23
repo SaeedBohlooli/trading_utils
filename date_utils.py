@@ -21,6 +21,11 @@ def time_now_yyyy_mm_dd_hh_mm():
 def time_now_yyyy_mm_dd_hh_mm_ss():
     now_date_time = datetime.datetime.now()
     return now_date_time.strftime("%Y-%m-%d %H:%M:%S")
+
+def get_yyyymmdd():
+    now_date_time = datetime.datetime.now()
+    return now_date_time.strftime("%Y%m%d")
+
 def format_yyyymmdd(date_obj):
     """
     Convert a datetime.date (or datetime.datetime) to yyyymmdd string.
@@ -88,3 +93,17 @@ def seconds_passed_since_last_record(df, column_name='date'):
     except Exception as e:
         logger.error(f"TODO Error in minutes_since_last_record: {e}", exc_info=True)
         return None
+
+def next_fridays(n=10):
+    today = datetime.date.today()
+    result = []
+
+    # Find the upcoming Friday (weekday(): Monday=0, Sunday=6)
+    days_until_friday = (4 - today.weekday()) % 7
+    next_friday = today + datetime.timedelta(days=days_until_friday)
+
+    for _ in range(n):
+        result.append(next_friday.strftime("%Y%m%d"))
+        next_friday += datetime.timedelta(days=7)
+
+    return result
