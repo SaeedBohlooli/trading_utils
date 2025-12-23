@@ -29,8 +29,8 @@ def extract_trades_with_prices(df):
     for contract_localSymbol, group in df.groupby("contract_localSymbol"):
         group = group.sort_values("execution_time").reset_index(drop=True)
         if 'NVDA' in contract_localSymbol:
-            print(f"group, {contract_localSymbol}, group: \n{group.to_markdown()} ")
-        print(f"group, {contract_localSymbol}, group: \n{group.to_markdown()} ")
+            logger.info(f"group, {contract_localSymbol}, group: \n{group.to_markdown()} ")
+        logger.info(f"group, {contract_localSymbol}, group: \n{group.to_markdown()} ")
 
         pos = 0
         open_price = 0
@@ -152,16 +152,16 @@ def orchestrate(portfolio_id='p250'):
         return
     executions_df = polish_executions_df(executions_df)
 
-    print('--------------------------')
-    print(f"executions_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_df, 'execution_time', '00:00').to_markdown()}")
+    logger.info('--------------------------')
+    logger.info(f"executions_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_df, 'execution_time', '00:00').to_markdown()}")
 
     commission_df = ib_posttrade.load_ib_df(ib_dir, 'ib_commission_df')
 
     executions_w_pnl_df = pd.merge(executions_df, commission_df, left_on="execution_execId", right_on="execId", how="left")
 
     df_utils.save_df_to_csv(executions_w_pnl_df, file_path=f'{ib_pnl_dir}/10-executions_w_pnl_df.csv', tabular=True)
-    print('--------------------------')
-    print(f"executions_w_pnl_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_w_pnl_df, 'execution_time', '00:00').to_markdown()}")
+    logger.info('--------------------------')
+    logger.info(f"executions_w_pnl_df:\n{df_utils.capture_df_starting_hour_x_on_last_day(executions_w_pnl_df, 'execution_time', '00:00').to_markdown()}")
 
 
     # TODO debug ,,,
@@ -169,20 +169,20 @@ def orchestrate(portfolio_id='p250'):
     trades_w_prices_df = extract_trades_with_prices(executions_w_pnl_df)
 
     df_utils.save_df_to_csv(trades_w_prices_df, file_path=f'{ib_pnl_dir}/13-trades_w_prices_df.csv', tabular=True)
-    print('--------------------------')
-    print(f"trades_w_prices_df \n{trades_w_prices_df[0:].to_markdown()}")
+    logger.info('--------------------------')
+    logger.info(f"trades_w_prices_df \n{trades_w_prices_df[0:].to_markdown()}")
 
     trades_w_roi_df = do_x(trades_w_prices_df)
 
     df_utils.save_df_to_csv(trades_w_roi_df, file_path=f'{ib_pnl_dir}/16-trades_w_roi_df.csv', tabular=True)
-    print('--------------------------')
-    print(f"trades_w_roi_df \n{trades_w_roi_df[0:].to_markdown()}")
+    logger.info('--------------------------')
+    logger.info(f"trades_w_roi_df \n{trades_w_roi_df[0:].to_markdown()}")
 
     trades_w_pnl_df = do_y(trades_w_roi_df)
 
     df_utils.save_df_to_csv(trades_w_pnl_df, file_path=f'{ib_pnl_dir}/19-trades_w_pnl_df.csv', tabular=True)
-    print('--------------------------')
-    print(f"trades_w_roi_df \n{trades_w_pnl_df[0:].to_markdown()}")
+    logger.info('--------------------------')
+    logger.info(f"trades_w_roi_df \n{trades_w_pnl_df[0:].to_markdown()}")
 
 
 if __name__ == "__main__":

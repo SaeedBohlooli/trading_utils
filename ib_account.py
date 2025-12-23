@@ -3,7 +3,7 @@ from ib_async import IB, AccountValue
 logger = logging.getLogger(__name__)
 
 
-async def get_account_info(ib: IB) -> dict:
+async def get_ib_account_info(ib: IB) -> dict:
     """
     Fetch account summary as a dict {tag: value}.
     Uses ib_async.accountSummaryAsync (high-level helper).
