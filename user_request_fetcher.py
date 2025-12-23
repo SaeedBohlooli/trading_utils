@@ -7,10 +7,10 @@ logger = logging.getLogger(__name__)
 
 def fetch_user_request(app_config, application_state):
     try:
-        host = app_config.get("flask", {}).get("host")
-        port = app_config.get("flask", {}).get("port")
+        host = app_config.get("api_service", {}).get("host")
+        port = app_config.get("api_service", {}).get("port")
         if not host or not port:
-            logger.warning("@@@ fetch_user_request, Flask IP/port not configured properly.")
+            logger.warning(f"@@@ fetch_user_request, Flask IP/port not configured properly. host:{host}, port:{port} ")
             return {}
 
         url = f"http://{host}:{port}/api/get-all-requests"

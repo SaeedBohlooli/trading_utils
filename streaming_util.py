@@ -1,5 +1,5 @@
 import numpy as np
-
+import math
 def df_to_stream_payload(
     parent_df,
     child_df,
@@ -55,3 +55,19 @@ def df_to_stream_payload(
             payload.append(row)
 
         return payload
+
+
+def sanitize_for_json(obj, nan_value=None):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v, nan_value) for k, v in obj.items()}
+
+    if isinstance(obj, list):
+        return [sanitize_for_json(v, nan_value) for v in obj]
+
+    if isinstance(obj, float):
+        return None if math.isnan(obj) or math.isinf(obj) else obj
+
+    if isinstance(obj, np.floating):
+        return None if np.isnan(obj) or np.isinf(obj) else float(obj)
+
+    return obj

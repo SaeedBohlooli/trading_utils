@@ -210,7 +210,7 @@ async def get_or_subscribe_symbol_price(ib, symbol, contract_month=None):
     Returns best available price (last > bid > ask) for any subscribed symbol.
     """
     con_id = global_state.symbol_to_conid.get(symbol)
-    logger.info(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}")
+    logger.debug(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}")
 
     if con_id is None:
         await subscribe_symbol(ib, symbol, contract_month=contract_month)
@@ -221,7 +221,7 @@ async def get_or_subscribe_symbol_price(ib, symbol, contract_month=None):
         logger.warning(f"@@ get_latest_price: No quote yet for {symbol}")
         return None
     else:
-        logger.info(f"@@ get_latest_price: quote for {symbol}: {q}")
+        logger.debug(f"@@ get_latest_price: quote for {symbol}: {q}")
     last = q.get("last")
     bid  = q.get("bid")
     ask  = q.get("ask")
@@ -275,7 +275,7 @@ async def subscribe_contracts_to_market_data(ib, contracts):
             logger.error(f"@@@@@@ subscribe_to_contracts: Encountered None contract — skipping contract: {c}")
             continue
         if c.conId in global_state.conid_to_symbol:
-            logger.warning(f"@@@ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
+            logger.warning(f"@ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
             continue
         ticker = ib.reqMktData(
             c,
@@ -373,7 +373,7 @@ def find_and_print_invalid_quotes(df):
     invalid_rows = df.loc[invalid_mask]
 
     if not invalid_rows.empty:
-        logger.warning(f"@@@ find_and_print_invalid_quotes, Invalid rows (bid or ask is NaN or -1): \n{invalid_rows.to_markdown()}")
+        logger.warning(f"@ find_and_print_invalid_quotes, Invalid rows (bid or ask is NaN or -1): \n{invalid_rows.to_markdown()}")
 
     return invalid_rows
 
