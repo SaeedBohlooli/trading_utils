@@ -28,7 +28,9 @@ async def calculate_market_session(ib: IB) -> dict:
             "is_open": False,
             "start": None,
             "end": None,
-            'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
+            'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss(),
+            'start_time': 0,
+            'end_hhmm': 0
         }
     details = details[0]
     logger.info(f"[MarketSession] Trading hours: {details.tradingHours}, Timezone: {details.timeZoneId}, details: {details}")
@@ -59,7 +61,10 @@ async def calculate_market_session(ib: IB) -> dict:
                     "is_open": False,
                     "start": None,
                     "end": None,
-                    'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
+                    'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss(),
+                    'start_hhmm': 0,
+                    'end_hhmm': 0
+
                 }
         else: # 20251215:0400-20251215:2000
 
@@ -74,7 +79,9 @@ async def calculate_market_session(ib: IB) -> dict:
                 "is_open": start_dt <= now <= end_dt,
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
-                'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
+                'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss(),
+                'start_hhmm': int(start),
+                'end_hhmm': int(end)
             }
 
     logger.warning(f"@@@@ [MarketSession] Market session failed {details}")
@@ -83,7 +90,9 @@ async def calculate_market_session(ib: IB) -> dict:
         "is_open": False,
         "start": None,
         "end": None,
-        'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss()
+        'timestamp': date_utils.time_now_yyyy_mm_dd_hh_mm_ss(),
+        'start_hhmm': 0,
+        'end_hhmm': 0
     }
 
 
