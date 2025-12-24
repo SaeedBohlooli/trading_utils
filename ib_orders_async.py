@@ -8,6 +8,7 @@ import pandas as pd
 import pprint
 from trading_utils import date_utils
 import logging
+from trading_utils import global_state
 
 sys.path.insert(0, f'../')
 
@@ -17,6 +18,21 @@ from trading_utils import ib_pricing
 from trading_utils import ib_posttrade
 
 logger = logging.getLogger(__name__)
+
+CONTRACT_TYPE_MAP = {
+    Stock: "STOCK",
+    Option: "OPTION",
+    Future: "FUTURE",
+    Forex: "FOREX",
+    Index: "INDEX",
+    Bag: "BAG",
+    CFD: "CFD",
+    Crypto: "CRYPTO",
+    Bond: "BOND",
+    Commodity: "COMMODITY",
+    MutualFund: "FUND",
+    Warrant: "WARRANT",
+}
 
 # TODO in 102 change to place_multi_leg_option_order
 def send_order(ib, legs, total_quantity, root_symbol, order_ref):
@@ -43,10 +59,22 @@ def send_order(ib, legs, total_quantity, root_symbol, order_ref):
     return trade
 
 
-async def place_single_leg_option_order(ib, symbol=None, expiry=0, strike=0, right=None, side=None, total_quantity=0, order_ref=None, exchange='SMART', currency='USD', trading_class=None):
+async def place_single_leg_option_order(ib, symbol=None, expiry=0, strike=0, right=None, side=None, total_quantity=0, order_ref=None, exchange=None, currency=None, trading_class=None):
     # Combo Contract
 
-    logger.info(f"Placing single leg option order for {symbol} {expiry} {strike} {right} {side} qty={total_quantity} order_ref={order_ref}")
+    logger.info(f"Placing single leg option order for {symbol} {expiry} {strike} {right} {side} qty={total_quantity} {exchange} {currency} {trading_class} order_ref={order_ref}")
+
+    if exchange is None:
+        reg = global_state.symbol_registry.get(symbol)
+        if reg is not None:
+            exchange = reg.get("exchange", exchange)
+            currency = reg.get("currency", currency)
+            trading_class = reg.get("trading_class")
+        else:
+            logger.warning(f"Symbol {symbol} not found in symbol_registry, using default exchange SMART and currency USD")
+            exchange = 'SMART'
+            currency = 'USD'
+            trading_class = symbol
 
     if trading_class is None:
         trading_class = symbol
@@ -65,13 +93,13 @@ async def place_single_leg_option_order(ib, symbol=None, expiry=0, strike=0, rig
     # 2) Qualify contract (fills in conId etc.)
     qualified = await ib.qualifyContractsAsync(contract)
     if not qualified:
-        logger.error("Could not qualify contract (check symbol/expiry/strike/exchange).")
+        logger.error(f"Could not qualify contract (check symbol/expiry/strike/exchange). {symbol} {expiry} {strike} {right} {exchange} {currency} {trading_class}")
         return
 
     contract = qualified[0]
     print("Qualified:", contract)
 
-    order = MarketOrder('BUY', totalQuantity=total_quantity)
+    order = MarketOrder(action, totalQuantity=total_quantity)
     logger.info(f"TODO {order}")
     if order_ref:
         order.orderRef = order_ref
@@ -220,6 +248,8 @@ async def convert_open_orders_to_dict(ib: IB):
         o = t.order
         c = t.contract
 
+        c_type = CONTRACT_TYPE_MAP.get(type(c), "UNKNOWN")
+
         if o.totalQuantity == 0:
             continue
 
@@ -244,6 +274,7 @@ async def convert_open_orders_to_dict(ib: IB):
             "contract_id": c.conId,
             "sec_type": c.secType,
             "exchange": c.exchange,
+            "contract_type": c_type,
 
             # --------------------
             # Order details

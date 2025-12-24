@@ -13,8 +13,6 @@ import math
 
 async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
     #
-    if global_state.ib_config.get('fall_back', False):
-        return generate_fake_spx_price()
 
     for attempt in range(1, max_retries + 1):
         # spx = Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD')

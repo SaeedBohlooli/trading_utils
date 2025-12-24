@@ -34,7 +34,7 @@ async def process_user_requests(ib, app_config, application_state):
     requests_needs_to_delete = []
     for user_request in application_state.get('user_requests', []):
         logger.info(f"Processing user request: {user_request}")
-        if user_request.get('request_type').lower() == 'close_position':
+        if user_request.get('request_type', '').lower() == 'close_position':
             symbol = user_request.get('symbol')
             if symbol:
                 logger.info(f"Closing position for symbol: {symbol}")
@@ -54,7 +54,7 @@ async def process_user_requests(ib, app_config, application_state):
                     requests_needs_to_delete.append(user_request)
             else:
                 logger.warning("No symbol provided for close_position action.")
-        elif user_request.get('request_type').lower() == 'close_all_positions':
+        elif user_request.get('request_type', '').lower() == 'close_all_positions':
             logger.info("close_all_positions ... .")
             order_ref = ib_orders_async.generate_order_ref(application_state.get('portfolio_id'),event='CLOSE', unique_run_number=application_state.get('unique_run_number'), alias='CLOSE_ALL')
             result = await ib_positions_async.close_all_open_position_async(ib, order_ref=order_ref)
@@ -64,7 +64,7 @@ async def process_user_requests(ib, app_config, application_state):
                 requests_needs_to_delete.append(user_request)
 
 
-        elif user_request.get('request_type').lower() == 'cancel_all_orders':
+        elif user_request.get('request_type', '').lower() == 'cancel_all_orders':
             logger.info("cancel_all_orders ... .")
             result = await ib_orders_async.cancel_all_open_orders(ib)
             if result:
@@ -72,7 +72,7 @@ async def process_user_requests(ib, app_config, application_state):
                 user_request['status'] += '|ENGINE_PROCESSED'
                 requests_needs_to_delete.append(user_request)
 
-        elif user_request.get('request_type').lower() == 'open_order_from_control_panel':
+        elif user_request.get('request_type', '').lower() == 'open_order_from_control_panel':
             logger.info("checking OPEN_ORDER_FROM_CONTROL_PANEL ... .")
 
             symbol = user_request.get('symbol')

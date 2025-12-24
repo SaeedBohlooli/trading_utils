@@ -35,6 +35,7 @@ symbol_registry = {
         "secType": "IND",
         "exchange": "CBOE",
         "currency": "USD",
+        "trading_class": "SPXW",
     },
     "MNQ": {
         "secType": "FUT",
