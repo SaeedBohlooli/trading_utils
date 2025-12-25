@@ -35,7 +35,7 @@ CONTRACT_TYPE_MAP = {
 }
 
 # TODO in 102 change to place_multi_leg_option_order
-def send_order(ib, legs, total_quantity, root_symbol, order_ref):
+def submit_option_order_multi_leg(ib, legs, total_quantity, root_symbol, order_ref):
     # Combo Contract
     butterfly = Contract(
         symbol=root_symbol,
@@ -59,7 +59,7 @@ def send_order(ib, legs, total_quantity, root_symbol, order_ref):
     return trade
 
 
-async def place_single_leg_option_order(ib, symbol=None, expiry=0, strike=0, right=None, side=None, total_quantity=0, order_ref=None, exchange=None, currency=None, trading_class=None):
+async def submit_option_order_single_leg(ib, symbol=None, expiry=0, strike=0, right=None, side=None, total_quantity=0, order_ref=None, exchange=None, currency=None, trading_class=None):
     # Combo Contract
 
     logger.info(f"Placing single leg option order for {symbol} {expiry} {strike} {right} {side} qty={total_quantity} {exchange} {currency} {trading_class} order_ref={order_ref}")
@@ -113,7 +113,7 @@ async def place_single_leg_option_order(ib, symbol=None, expiry=0, strike=0, rig
 
     return trade
 
-async def submit_prequalified_option_order(ib, q_contract, side, total_quantity=0, order_ref=None):
+async def submit_option_order_prequalified_contract(ib, q_contract, side, total_quantity=0, order_ref=None):
     # Combo Contract
 
 
@@ -160,7 +160,7 @@ def generate_order_ref(portfolio_id, event=None, symbol=None, side=None, unique_
     return order_ref
 
 # in 106 change to place_stock_order
-async def place_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", order_ref= None, algo_strategy=None, adaptive_priority=None, wait_untill_filled: bool=False ) :
+async def submit_linear_order(ib: IB, symbol: str, quantity: int, action: str = "BUY", order_ref= None, algo_strategy=None, adaptive_priority=None, wait_untill_filled: bool=False) :
     """
     Place a MARKET order for a given stock symbol.
 
@@ -399,3 +399,81 @@ async def cancel_open_orders_by_order_ref(
         f"[CANCEL] {count} orders canceled for orderRef={order_ref}"
     )
     return count
+
+
+async def submit_linear_order_with_sl_tp(ib, side, contract, stop_loss_price, take_profit_price, quantity, order_ref, candle_date=''):
+
+    tp_price = ib_pricing.round_based_on_symbol(contract.symbol, take_profit_price)
+    sl_price = ib_pricing.round_based_on_symbol(contract.symbol, stop_loss_price)
+
+    parent_order_id = ib.client.getReqId()
+    side = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL' # unify ..
+    revers = 'SELL' if side == 'BUY' else 'BUY'
+
+    logger.warning(f"side: {side}, revers: {revers}, tp_price: {tp_price}, sl_price:{sl_price}, contract: {contract} ")
+
+    parent = MarketOrder(side, quantity, orderId=parent_order_id)
+    parent.outsideRth = True
+    parent.transmit = False
+    parent.tif = 'GTC'
+    parent.outsideRth = True
+    parent.orderRef = f'{order_ref}'
+    logger.warning(f"parent: {parent}")
+
+    # Take profit (limit sell)
+    tp_order_id = ib.client.getReqId()
+    tp = LimitOrder(revers, quantity, tp_price, parentId=parent_order_id, orderId=tp_order_id)
+    tp.outsideRth = True
+    tp.transmit = False
+    tp.tif = 'GTC'
+    tp.outsideRth = True
+    tp_order_ref = f'{order_ref}-TP'
+    tp.orderRef = tp_order_ref
+    logger.warning(f"tp: {tp}")
+
+    # Stop loss (stop sell)
+    sl_order_id = ib.client.getReqId()
+    sl = StopOrder(revers, 1, sl_price, parentId=parent_order_id, orderId=sl_order_id)
+    sl.transmit = True  # Last child sets transmit=True
+    sl.outsideRth = True
+    sl.tif = 'GTC'
+    sl.outsideRth = True
+    sl_order_ref = f'{order_ref}-SL'
+    sl.orderRef = sl_order_ref
+    logger.warning(f"sl: {sl}")
+
+    # Place all 3
+    parent_trade = ib.placeOrder(contract, parent)
+    parent_trade.fillEvent += ib_posttrade.on_fill
+    logger.warning(f"parent_trade: {parent_trade}")
+
+    tp_trade = ib.placeOrder(contract, tp)
+    tp_trade.fillEvent += ib_posttrade.on_fill
+    logger.warning(f"tp_trade: {tp_trade}")
+
+    sl_trade = ib.placeOrder(contract, sl)
+    sl_trade.fillEvent += ib_posttrade.on_fill
+    logger.warning(f"sl_trade: {sl_trade}")
+
+    data = {
+        'available_quantity': quantity,
+        'date': f'{str(date_utils.time_now())}',
+        'candle_date': str(candle_date),
+        'open_trade_side': side, # This  is BUY SELL , not LONG SHORT
+        'open_trade_order_id': parent_order_id,
+        'open_trade_open_price': 1,
+        'open_trade_order_ref' : order_ref,
+        'open_trade_stop_loss_price': sl_price,
+        'open_trade_stop_loss_order_id': sl_order_id,
+        'open_trade_stop_loss_order_ref': sl_order_ref,
+        'open_trade_take_profit_price': tp_price,
+        'open_trade_take_profit_order_id' : tp_order_id,
+        'open_trade_take_profit_order_re' : tp_order_ref,
+        'market_order_sent': True,
+        'market_order_executed': False,
+
+    }
+
+    logger.info("order sent.. we sleep 1 sec to order get executed ..") # removing sleep will cause issue
+    await asyncio.sleep(0.5)
+    return data

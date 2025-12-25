@@ -1,9 +1,9 @@
 import logging
+logger = logging.getLogger(__name__)
 import asyncio
 from trading_utils import *
 from ib_async import *
 import pandas as pd
-logger = logging.getLogger(__name__)
 import time
 from trading_utils import date_utils
 from trading_utils import global_state
@@ -11,7 +11,7 @@ from trading_utils import ib_contract
 import numpy as np
 import math
 
-async def get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
+async def XXX_get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
     #
 
     for attempt in range(1, max_retries + 1):
@@ -294,7 +294,7 @@ async def subscribe_contracts_to_market_data(ib, contracts):
     logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
     return
 
-async def get_and_subscribe_option_price(ib, symbol=None, expiry=None,strike=None, right=None):
+async def get_or_subscribe_option_price(ib, symbol=None, expiry=None,strike=None, right=None):
     contract = await ib_contract.get_option_contract_cached(ib, symbol, expiry, strike, right)
     if contract is None:
         logger.warning(f"get_or_subscribe_symbol_price: contract is None for symbol: {symbol}, expiry: {expiry}, strike: {strike}, right: {right}")

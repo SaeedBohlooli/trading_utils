@@ -253,3 +253,55 @@ async def close_all_open_position_async(ib, order_ref=None): # TODO use above me
 
 
     return True
+
+# TODO change to close_option_position_by_symbol
+# TODO need to check type of contract ...
+# TODO This is very dangerous. bcs for SPX options, will close all positions ... the strike, expiry, rght does not matther ...
+def close_option_position(ib, symbol=None, qty_to_close= None, order_ref=None):
+
+    positions = ib.positions()
+
+    qty_to_close = int(qty_to_close)
+
+    for pos in positions:
+        contract = pos.contract
+
+        position_qty = pos.position
+        if position_qty == 0:
+            logger.info(f"close_position_async, No open position to close for {symbol}")
+            return None
+
+        if contract.secType != 'OPT':
+            continue
+
+        if symbol is not None and symbol != contract.symbol:
+            logger.info(f"We are not closing this symbol: {symbol}, contract.symbol: {contract.symbol}")
+            continue
+
+        if qty_to_close is not None:
+            qty_to_close = min(abs(position_qty), qty_to_close)  # we are not closing more than what we have
+        else:
+            qty_to_close = abs(position_qty)
+
+        # --- Step 2: Determine opposite action ---
+        action = "SELL" if position_qty > 0 else "BUY"
+
+        # Create a market order
+        order = Order(
+            action=action,
+            orderType="MKT",
+            totalQuantity=qty_to_close
+        )
+        order.tif = 'GTC'  # Good Till Cancelled
+        if order_ref is not None:
+            order.orderRef = order_ref
+
+        pos.contract.exchange = "SMART"  # Ensure exchange is set
+
+        # Place order
+        trade = ib.placeOrder(pos.contract, order)
+        trade.fillEvent += ib_posttrade.on_fill
+        logger.info(f"close_option_positions, Order sent ....order_ref: {order_ref}")
+        logger.info(f"close_option_positions, trade: {trade}")
+
+        return True
