@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 from trading_utils import *
 from trading_utils import ib_posttrade
 from trading_utils import date_utils
+from trading_utils import ib_orders_async
 
 def has_open_option_positions(ib, symbol, expiry): #TODO need to moved ...
     # Get all current positions
@@ -66,7 +67,8 @@ def convert_positions_to_dict(ib):
 
         c = p.contract
         is_option = isinstance(c, Option)
-        contract_type = type(c)
+        contract_type = ib_orders_async.CONTRACT_TYPE_MAP.get(type(c), "UNKNOWN")
+
 
         d = {
             # --------------------

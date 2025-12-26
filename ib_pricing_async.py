@@ -192,7 +192,7 @@ async def subscribe_symbol(ib, symbol, secType= None, exchange= None, currency=N
     qualified = details[0]  # this is already a Contract (Index/Stock/etc.)
     con_id = qualified.conId
 
-    logger.info(f"[SUBSCRIBE] {symbol} qualified with conId={con_id}")
+    logger.info(f"[SUBSCRIBE] {symbol} qualified with conId= {con_id}")
 
     ticker = ib.reqMktData(contract, "", False, False)
     ticker.updateEvent += on_ticker_update
@@ -203,34 +203,60 @@ async def subscribe_symbol(ib, symbol, secType= None, exchange= None, currency=N
 
     return ticker
 
-async def get_or_subscribe_symbol_price(ib, symbol, contract_month=None):
+async def get_or_subscribe_symbol_price(ib,
+                                        symbol,
+                                        contract_month=None,
+                                        wait_for_price=False,
+                                        timeout_sec=10.0,
+                                        poll_interval=0.5,):
     """
     Returns best available price (last > bid > ask) for any subscribed symbol.
     """
-    con_id = global_state.symbol_to_conid.get(symbol)
-    logger.debug(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}")
+    con_id = None
+    while con_id is None: # wait until you get con_id
+        con_id = global_state.symbol_to_conid.get(symbol)
+        logger.info(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}")
 
-    if con_id is None:
-        await subscribe_symbol(ib, symbol, contract_month=contract_month)
-        # return None
+        if con_id is None:
+            await subscribe_symbol(ib, symbol, contract_month=contract_month)
+            # return None
 
-    q = global_state.quote_cache.get(con_id)
-    if q is None:
-        logger.warning(f"@@ get_latest_price: No quote yet for {symbol}")
-        return None
-    else:
-        logger.debug(f"@@ get_latest_price: quote for {symbol}: {q}")
-    last = q.get("last")
-    bid  = q.get("bid")
-    ask  = q.get("ask")
+    start = time.time()
+    warned = False
 
-    # Best price logic
-    if valid(last): return last
-    if valid(bid): return bid
-    if valid(ask): return ask
-    logger.info(f"@@ get_latest_price: No valid price (last, bid, ask) for {symbol}")
-    return None
+    while True:
+        q = global_state.quote_cache.get(con_id)
 
+        logger.debug(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}, global_state.quote_cache: {global_state.quote_cache}")
+        logger.debug(f"@@ get_latest_price: symbol: q: {q}")
+
+        if q:
+            last = q.get("last")
+            bid = q.get("bid")
+            ask = q.get("ask")
+
+            # Best price logic
+            if valid(last): return last
+            if valid(bid): return bid
+            if valid(ask): return ask
+        # -----------------------------
+        # No price yet
+        # -----------------------------
+        if not wait_for_price:
+            logger.warning(f"@@ get_latest_price: No quote yet for {symbol}")
+            return None
+
+        if time.time() - start > timeout_sec:
+            logger.warning(
+                f"@@ Timeout waiting for price for {symbol} after {timeout_sec}s"
+            )
+            return None
+
+        if not warned:
+            logger.info(f"@@ Waiting for first price for {symbol}")
+            warned = True
+        logger.info(f"@@ get_latest_price: No valid price yet for {symbol} ... we still waiting ...")
+        await asyncio.sleep(poll_interval)
 
 def valid(x):
     return x is not None and not pd.isna(x)
