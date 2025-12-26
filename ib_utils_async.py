@@ -14,7 +14,7 @@ async def create_ib_async(ip="127.0.0.1", port=7497, client_id=1, retry_delay=3,
     attempt = 0
     while True:
         try:
-            logger.info(f"Trying IBKR connection: {ip}:{port}, clientId={client_id}")
+            logger.info(f"Trying IBKR connection: {ip}:{port}, clientId={client_id}, max_attempts: {max_attempts}, attempt: {attempt}...")
 
             await ib.connectAsync(ip, port, clientId=client_id, timeout=5)
 
