@@ -268,7 +268,7 @@ async def close_all_open_position_async(ib, order_ref=None): # TODO use above me
         logger.info(f"close_position_async, Order sent ....")
         logger.info(f"close_position_async, trade: {trade}")
 
-        asyncio.wait(0.5) # wait a bit before sending next order
+        await asyncio.sleep(0.5) # wait a bit before sending next order
 
 
     return True
