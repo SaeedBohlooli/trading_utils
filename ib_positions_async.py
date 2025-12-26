@@ -6,6 +6,7 @@ sys.path.insert(0, f'../')
 logger = logging.getLogger(__name__)
 from trading_utils import *
 from trading_utils import ib_posttrade
+from trading_utils import date_utils
 
 def has_open_option_positions(ib, symbol, expiry): #TODO need to moved ...
     # Get all current positions
@@ -55,43 +56,61 @@ def get_position_qty(ib, symbol):
     return p.position if p else 0
 
 
+
 def convert_positions_to_dict(ib):
     out = []
+
     for p in ib.positions():
-        if p.position ==0:
+        if p.position == 0:
             continue
-        logger.info(f"convert_positions_to_dict: Processing position: {p}")
-        sym = p.contract.symbol
+
+        c = p.contract
+        is_option = isinstance(c, Option)
+        contract_type = type(c)
+
         d = {
-            "symbol": sym,
-            "contract_id": p.contract.conId,
+            # --------------------
+            # Common fields
+            # --------------------
+            "symbol": c.symbol,
+            "contract_id": c.conId,
+            "sec_type": c.secType,
             "qty": p.position,
             "avg_cost": p.avgCost,
-            # "market_price": p.marketPrice,
-            # "market_value": p.marketValue,
-            # "unrealized_pnl": p.unrealizedPNL,
-            # "realized_pnl": p.realizedPNL,
             "account": p.account,
 
-            # Derived fields
-            "direction": (
+            "side": (
                 "long" if p.position > 0 else
                 "short" if p.position < 0 else
                 "flat"
             ),
-
             "abs_qty": abs(p.position),
-
-            # Useful for engine routing/logic
+            "contract_type": contract_type,
             "last_update": date_utils.time_now_yyyy_mm_dd_hh_mm_ss(),
             "close_requested": False,
             "close_request_id": None,
+            "tags": [],
+            "metadata": {},
 
-            # Future usage
-            "tags": [],        # e.g., ["hedge", "gamma_scalp", "manual"]
-            "metadata": {},    # free-form space for storing strategy info
+            # --------------------
+            # Option fields (FLAT, SAME LEVEL)
+            # --------------------
+            "strike": c.strike if is_option else None,
+            "expiry": c.lastTradeDateOrContractMonth if is_option else None,
+            "right": c.right if is_option else None,
+            "multiplier": (
+                int(c.multiplier) if is_option and c.multiplier
+                else 100 if is_option
+                else None
+            ),
+            "local_symbol": c.localSymbol if is_option else None,
+            "trading_class": c.tradingClass if is_option else None,
+            "exchange": c.exchange if is_option else None,
+            "currency": c.currency if is_option else None,
         }
+
         out.append(d)
+
     return out
 
 
