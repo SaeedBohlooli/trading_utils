@@ -74,6 +74,13 @@ FUNCTION_MAP = {
         col=params["col"],
         length=params["length"]
     ),
+
+    # -------------------------------
+    # calculate_day_high_low
+    # -------------------------------
+    "calculate_day_high_low": lambda df, inputs, **params: calculate_day_high_low(
+        df
+    ),
 }
 
 
@@ -136,3 +143,16 @@ def highest(df, col, length):
 
 def lowest(df, col, length):
     return df[col].rolling(length).min()
+
+# ============================================================
+
+def calculate_day_high_low(df):
+    """
+    Adds 'day_high' and 'day_low' columns to the DataFrame.
+    Assumes df has a DateTimeIndex.
+    """
+    df['trade_date'] = df['date'].dt.date
+    df['day_high'] = df.groupby('trade_date')['high'].cummax()
+    df['day_low'] = df.groupby('trade_date')['low'].cummin()
+
+    return df

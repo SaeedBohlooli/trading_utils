@@ -4,6 +4,11 @@ import pandas_ta as ta
 
 logger = logging.getLogger(__name__)
 
+#
+# ============================================================
+# FUNCTION MAP — Using PANDAS_TA (fully aligned with your config)
+# DO NOT USE THIS FOR INDICATORS NOT SUPPORTED BY PANDAS_TA
+#
 
 FUNCTION_MAP = {
     "sma": lambda df, inputs, **params: ta.sma(df[inputs[0]], **params),
