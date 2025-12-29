@@ -43,3 +43,17 @@ symbol_registry = {
         "currency": "USD",
     }
 }
+
+
+# This is used to stringify option cache keys for logging or serialization
+# This is the error prone part since keys can be tuples
+# 2025-12-23 14:22:11,459 - trading_core.data_saver_manager - ERROR - @@@ [DataSaverManager] Unexpected error keys must be str, int, float, bool or None, not tuple
+
+def stringify_option_cache(cache: dict) -> dict:
+    out = {}
+    for k, v in cache.items():
+        if isinstance(k, tuple):
+            out["|".join(map(str, k))] = str(v)
+        else:
+            out[k] = str(v)
+    return out
