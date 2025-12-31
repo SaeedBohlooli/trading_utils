@@ -213,11 +213,13 @@ async def get_or_subscribe_symbol_price(ib,
     Returns best available price (last > bid > ask) for any subscribed symbol.
     """
     con_id = None
+    attempt = 0
     while con_id is None: # wait until you get con_id
+        attempt += 1
         con_id = global_state.symbol_to_conid.get(symbol)
-        logger.info(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}")
 
         if con_id is None:
+            logger.info(f"@@ get_or_subscribe_symbol_price: symbol {symbol} not subscribed yet, subscribing now ... attempt: {attempt}")
             await subscribe_symbol(ib, symbol, contract_month=contract_month)
             # return None
 
