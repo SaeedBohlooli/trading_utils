@@ -222,6 +222,9 @@ async def get_or_subscribe_symbol_price(ib,
             logger.info(f"@@ get_or_subscribe_symbol_price: symbol {symbol} not subscribed yet, subscribing now ... attempt: {attempt}")
             await subscribe_symbol(ib, symbol, contract_month=contract_month)
             # return None
+        if attempt > 3:
+            logger.error(f"@@ get_or_subscribe_symbol_price: Failed to get conId for symbol: {symbol} after {attempt} attempts.")
+
 
     start = time.time()
     warned = False
@@ -229,8 +232,8 @@ async def get_or_subscribe_symbol_price(ib,
     while True:
         q = global_state.quote_cache.get(con_id)
 
-        logger.debug(f"@@ get_latest_price: symbol: {symbol}, con_id: {con_id}, global_state.quote_cache: {global_state.quote_cache}")
-        logger.debug(f"@@ get_latest_price: symbol: q: {q}")
+        logger.debug(f"@ get_latest_price: symbol: {symbol}, con_id: {con_id}, global_state.quote_cache: {global_state.quote_cache}")
+        logger.debug(f"@ get_latest_price: symbol: q: {q}")
 
         if q:
             last = q.get("last")
@@ -245,19 +248,19 @@ async def get_or_subscribe_symbol_price(ib,
         # No price yet
         # -----------------------------
         if not wait_for_price:
-            logger.warning(f"@@ get_latest_price: No quote yet for {symbol}")
+            logger.warning(f"@ get_latest_price: No quote yet for {symbol}")
             return None
 
         if time.time() - start > timeout_sec:
             logger.warning(
-                f"@@ Timeout waiting for price for {symbol} after {timeout_sec}s"
+                f"@ Timeout waiting for price for {symbol} after {timeout_sec}s"
             )
             return None
 
         if not warned:
-            logger.info(f"@@ Waiting for first price for {symbol}")
+            logger.info(f"@ Waiting for first price for {symbol}")
             warned = True
-        logger.info(f"@@ get_latest_price: No valid price yet for {symbol} ... we still waiting ...")
+        logger.info(f"@ get_latest_price: No valid price yet for {symbol} ... we still waiting ...")
         await asyncio.sleep(poll_interval)
 
 def valid(x):

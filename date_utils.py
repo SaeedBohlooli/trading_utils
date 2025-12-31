@@ -26,6 +26,10 @@ def get_yyyymmdd():
     now_date_time = datetime.datetime.now()
     return now_date_time.strftime("%Y%m%d")
 
+def get_yyyy_mm_dd():
+    now_date_time = datetime.datetime.now()
+    return now_date_time.strftime("%Y-%m-%d")
+
 
 def time_now_yyyy_mm_dd_hh_mm_ss_as_id():
     now_date_time = datetime.datetime.now()
