@@ -12,11 +12,17 @@ ib_execution_df = pd.DataFrame()
 ib_errors_df = pd.DataFrame()
 
 ib_config = {}
+# --------------
+# Cache dictionaries
+# --------------
 
+quote_cache = {}
 
 symbol_to_conid = {}        # Maps “SPX” → 416904
 conid_to_symbol = {}        # Reverse lookup
-quote_cache = {}
+contract_cache = {}     # symbol -> fully qualified contract object
+option_contract_cache = {}  # symbol+expiry+strike+right -> fully qualified contract object"
+conid_to_contract_cache = {} # conid -> fully qualified contract object
 
 # Optional: define a helper for safe updates
 def update_quote(con_id, data):
@@ -25,10 +31,6 @@ def update_quote(con_id, data):
 # ----------------------------------------------------
 # GLOBAL contract cache for historical / live requests
 # ----------------------------------------------------
-contract_cache = {}     # symbol -> fully qualified contract object
-
-
-option_contract_cache = {}  # symbol+expiry+strike+right -> fully qualified contract object"
 
 symbol_registry = {
     "SPX": {

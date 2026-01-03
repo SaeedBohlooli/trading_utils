@@ -92,3 +92,18 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     cache[key] = qc
 
     return qc
+
+async def get_option_contract_by_conid(ib, con_id):
+
+    if con_id in global_state.conid_to_contract_cache:
+        return global_state.conid_to_contract_cache[con_id]
+
+    contract = Contract(conId=con_id)
+    qualified = await ib.reqContractDetailsAsync(contract)
+    if not qualified:
+        logger.error(f" @@@ [get_option_contract_by_conid], Could not qualify contract for conid={con_id}")
+        return None
+    qc = qualified[0]
+    global_state.conid_to_contract_cache[con_id] = qc
+
+    return qc
