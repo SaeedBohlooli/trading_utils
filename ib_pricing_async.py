@@ -190,6 +190,10 @@ async def subscribe_symbol(ib, symbol, secType= None, exchange= None, currency=N
     logger.info(f"[SUBSCRIBE], qualified contract: {symbol} details: {details}")
 
     qualified = details[0]  # this is already a Contract (Index/Stock/etc.)
+    if qualified is None:
+        logger.warning(f"@@@@@ subscribe_symbol: qualified contract is None for symbol: {symbol}")
+        return None
+
     con_id = qualified.conId
 
     logger.info(f"[SUBSCRIBE] {symbol} qualified with conId= {con_id}")

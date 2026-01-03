@@ -87,7 +87,7 @@ async def process_user_requests(ib, app_config, application_state):
             logger.info(f"OPEN_ORDER_FROM_CONTROL_PANEL ... Placing order for {symbol}, quantity: {quantity}, side: {side}, order_type: {order_type}, strike: {strike}, expiry: {expiry} .")
             order_ref = ib_orders_async.generate_order_ref(application_state.get('portfolio_id'),event='OPEN', unique_run_number=application_state.get('unique_run_number'), alias='CONTROL_PANEL_ORDER')
             if order_type.lower() == 'option':
-                result = await ib_orders_async.place_single_leg_option_order(ib, symbol=symbol, total_quantity=quantity, side=side, right=right,  strike=strike, expiry=expiry, order_ref=order_ref)
+                result = await ib_orders_async.submit_option_order_single_leg(ib, symbol=symbol, total_quantity=quantity, side=side, right=right,  strike=strike, expiry=expiry, order_ref=order_ref)
                 if result:
                     logger.info("Successfully placed order from control panel.")
                     user_request['status'] += '|ENGINE_PROCESSED'

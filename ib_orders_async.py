@@ -317,6 +317,40 @@ async def convert_open_orders_to_dict(ib: IB):
             "metadata": {},    # strategy_id, portfolio_id, model_price, etc.
         }
 
+        # --------------------
+        # Combo legs (if BAG)
+        # --------------------
+        d["legs"] = []
+
+        if isinstance(c, Bag):
+            logger.info(f"convert_open_orders_to_dict: orderId={o.orderId} is a BAG with {len(c.comboLegs or [])} legs")
+            logger.info(f"convert_open_orders_to_dict: comboLegs: {pprint.pformat(c.comboLegs)}")
+            for leg in c.comboLegs or []:
+                # opt = await resolve_option_by_conid(
+                #     ib,
+                #     leg.conId,
+                #     cache=application_state.get("option_contract_cache")
+                # )
+
+                leg_dict = {
+                    "conId": leg.conId,
+                    "action": leg.action,
+                    "ratio": leg.ratio,
+                    "exchange": leg.exchange,
+                }
+
+                # # enrich if resolved
+                # if opt:
+                #     leg_dict.update({
+                #         "symbol": opt.symbol,
+                #         "expiry": opt.lastTradeDateOrContractMonth,
+                #         "strike": opt.strike,
+                #         "right": opt.right,
+                #         "local_symbol": opt.localSymbol,
+                #     })
+
+                d["legs"].append(leg_dict)
+
         out.append(d)
 
     return out
