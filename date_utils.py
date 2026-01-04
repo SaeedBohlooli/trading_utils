@@ -2,6 +2,8 @@ import pytz
 import datetime
 import pandas as pd
 import logging
+import pandas_market_calendars as mcal
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -116,3 +118,170 @@ def next_fridays(n=10):
         next_friday += datetime.timedelta(days=7)
 
     return result
+
+def business_days_ago(ts: str, days: int) -> pd.Timestamp:
+    return pd.Timestamp(ts) - pd.offsets.BDay(days)
+
+
+import pandas as pd
+import pandas_market_calendars as mcal
+
+def trading_days_ago_at_time(
+    ts: str | pd.Timestamp,
+    days_back: int,
+    market: str = "NYSE",
+    hour: int = 9,
+    minute: int = 30,
+    tz: str = "America/New_York",
+) -> pd.Timestamp:
+    ts = pd.Timestamp(ts)
+    # Ensure timezone
+    ts = ts.tz_localize(tz) if ts.tzinfo is None else ts.tz_convert(tz)
+
+    cal = mcal.get_calendar(market)
+
+    # Build a schedule window big enough to cover days_back trading days
+    # (use a generous lookback buffer to account for weekends/holidays)
+    start = (ts - pd.Timedelta(days=30)).date()
+    end = ts.date()
+
+    sched = cal.schedule(start_date=start, end_date=end)
+    # print(f"trading_days_ago_at_time: schedule from {start} to {end} has {len(sched)} trading days \n{sched.to_markdown()}.")
+
+    if sched.empty:
+        raise RuntimeError(f"No trading schedule found for {market} in range {start}..{end}")
+
+    trading_days = sched.index  # DatetimeIndex of trading dates (midnight-like)
+    # Find the last trading day <= ts.date()
+    valid_days = trading_days[trading_days <= pd.Timestamp(end)]
+    if len(valid_days) == 0:
+        raise RuntimeError("No trading day on or before the given timestamp date.")
+
+    anchor_day = valid_days[-1]
+    target_day = valid_days[-(days_back + 1)]  # 0 back = same day
+
+    # Set to desired wall-clock time (09:30) in tz
+    target_ts = pd.Timestamp(
+        year=target_day.year,
+        month=target_day.month,
+        day=target_day.day,
+        hour=hour,
+        minute=minute,
+        tz=tz,
+    )
+    return target_ts
+
+import pandas as pd
+import pandas_market_calendars as mcal
+
+def trading_days_ahead_at_time(
+    ts: str | pd.Timestamp,
+    days_ahead: int,
+    market: str = "NYSE",
+    hour: int = 9,
+    minute: int = 30,
+    tz: str = "America/New_York",
+) -> pd.Timestamp:
+    ts = pd.Timestamp(ts)
+    ts = ts.tz_localize(tz) if ts.tzinfo is None else ts.tz_convert(tz)
+
+    cal = mcal.get_calendar(market)
+
+    # Look forward enough to cover holidays/weekends
+    start = ts.date()
+    end = (ts + pd.Timedelta(days=30)).date()
+
+    sched = cal.schedule(start_date=start, end_date=end)
+
+    if sched.empty:
+        raise RuntimeError(f"No trading schedule found for {market} in range {start}..{end}")
+
+    trading_days = sched.index
+
+    # Trading days on or after ts.date()
+    valid_days = trading_days[trading_days >= pd.Timestamp(start)]
+
+    if len(valid_days) <= days_ahead:
+        raise RuntimeError("Not enough future trading days in schedule window")
+
+    target_day = valid_days[days_ahead]
+
+    return pd.Timestamp(
+        year=target_day.year,
+        month=target_day.month,
+        day=target_day.day,
+        hour=hour,
+        minute=minute,
+        tz=tz,
+    )
+
+
+import pandas as pd
+import pandas_market_calendars as mcal
+from typing import List
+
+def trading_dates_between(
+    ts: str | pd.Timestamp,
+    days_back: int,
+    days_ahead: int = 0,
+) -> List[pd.Timestamp]:
+    """
+    Return NYSE trading dates:
+    [ts - days_back, ..., ts, ..., ts + days_ahead]
+    """
+
+    anchor = pd.Timestamp(ts).normalize()   # tz-naive, date-only
+
+    cal = mcal.get_calendar("NYSE")
+
+    # Build a window that safely covers holidays/weekends
+    start = anchor - pd.Timedelta(days=days_back * 3 + 10)
+    end = anchor + pd.Timedelta(days=days_ahead * 3 + 10)
+
+    schedule = cal.schedule(
+        start_date=start.date(),
+        end_date=end.date()
+    )
+
+    if schedule.empty:
+        return []
+
+    trading_days = schedule.index.normalize()  # tz-naive dates
+
+    # Find anchor index (or nearest previous trading day)
+    anchor_idx = trading_days.get_indexer(
+        [anchor],
+        method="ffill"
+    )[0]
+
+    if anchor_idx == -1:
+        raise RuntimeError("Anchor date is before first trading day in range")
+
+    start_idx = max(anchor_idx - days_back, 0)
+    end_idx = anchor_idx + days_ahead + 1
+
+    return list(trading_days[start_idx:end_idx])
+
+
+if __name__== "__main__":
+    # Example
+    entry_ts = "2025-12-19 13:05:05"
+    print(trading_days_ago_at_time(entry_ts, days_back=2, market="NYSE", hour=9, minute=30))
+
+    entry_ts = "2026-01-05"
+    print(trading_days_ahead_at_time(entry_ts, days_ahead=1, market="NYSE", hour=9, minute=30))
+
+    entry_ts = "2026-01-05"
+    start = trading_days_ago_at_time(entry_ts, days_back=2, market="NYSE", hour=9, minute=30)
+    print(type(start))
+
+
+
+    dates = nyse_trading_dates_between(
+        ts="2026-01-05",
+        days_back=2,
+        days_ahead=0,
+    )
+
+    for d in dates:
+        print(d.date())

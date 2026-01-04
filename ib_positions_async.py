@@ -208,7 +208,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
             qty_to_close = abs(position_qty)
 
 
-        logger.info(f"close_position_by_con_id, Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty})")
+        logger.info(f"close_position_by_con_id, Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty}) , order_ref: {order_ref}")
 
         # Create a market order
         order = Order(
@@ -230,7 +230,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
 
         return True
 
-    logger.info(f"close_position_by_con_id, No position found for con_id={con_id}")
+    logger.info(f"close_position_by_con_id, No position found for con_id={con_id} , order_ref: {order_ref}")
     return None
 
 

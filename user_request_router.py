@@ -33,6 +33,9 @@ async def process_user_requests(ib, app_config, application_state):
     logger.info(f"Processing user request here: {application_state.get('user_requests')}")
     requests_needs_to_delete = []
     for user_request in application_state.get('user_requests', []):
+        if 'ENGINE_PROCESSED' in user_request.get('status') :
+            requests_needs_to_delete.append(user_request)
+            continue  # Skip already processed requests
         logger.info(f"Processing user request: {user_request}")
         if user_request.get('request_type', '').lower() == 'close_position':
             symbol = user_request.get('symbol')
@@ -92,6 +95,7 @@ async def process_user_requests(ib, app_config, application_state):
                     logger.info("Successfully placed order from control panel.")
                     user_request['status'] += '|ENGINE_PROCESSED'
                     requests_needs_to_delete.append(user_request)
+
 
 
     # remove_requests_from_user_requests(application_state, requests_needs_to_delete)
