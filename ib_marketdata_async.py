@@ -36,7 +36,8 @@ async def get_stock_historical_data(
     retry_delay: float = 2.0,
     what_to_show: str = "TRADES",
     contract_month: str = None,  # used only for MNQ futures,
-    use_RTH: bool = True # True is faster no extra work by IB to trim bars to RTH
+    use_RTH: bool = True, # True is faster no extra work by IB to trim bars to RTH
+    print_last_few_rows = 0
 ):
     """
     Fetch historical data ending at `end_date` (optional)
@@ -109,7 +110,8 @@ async def get_stock_historical_data(
 
     df["date"] = pd.to_datetime(df["date"])
     logger.info(f"get_stock_historical_data, {symbol}, df['date'].min(): {df['date'].min()}, df['date'].max(): {df['date'].max()}")
-    logger.info(f"get_stock_historical_data, df:\n {df[-3:].to_markdown()}")
+    if print_last_few_rows > 0:
+        logger.info(f"get_stock_historical_data, {symbol}, df:\n {df[-3:].to_markdown()}")
 
     # df["date"] = pd.to_datetime(df["date"], utc=True).dt.tz_convert("America/New_York")
 

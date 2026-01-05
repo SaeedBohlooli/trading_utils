@@ -115,11 +115,10 @@ def compute_and_add_indicator(df, indicator_config):
     if isinstance(result, pd.Series):
         result = result.to_frame()
 
-    logger.info(
-        f"compute_and_add_indicator: {indicator_config['function']} to columns: {list(result.columns)}"
-    )
-    logger.info(f"Last 5 rows:\n{result.tail().to_markdown()}"
-    )
+    logger.info(f"compute_and_add_indicator: {indicator_config['function']} to columns: {list(result.columns)}")
+
+    if indicator_config.get("print_last_few_rows", 0) != 0:
+        logger.info(f"Last 5 rows:\n{result.tail().to_markdown()}")
 
     # Output mappings from config
     for ta_col, out_col in indicator_config["outputs"].items():
