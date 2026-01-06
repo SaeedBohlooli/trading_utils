@@ -130,15 +130,14 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
     positions = ib.positions()
 
     for pos in positions:
-        logger.info(f"@@@ need to check symbol tyope.  FIXMEEEEEEEEEE .... close_position_async, Checking position: {pos}  {pos.contract} ")
-        # for XPX it will not go based on the expiry or stike. ...
+        logger.info(f"Close_position_async, Checking position: {pos}  {pos.contract} ")
 
         if pos.contract.symbol != symbol:
             continue
 
         position_qty = pos.position
         if position_qty == 0:
-            logger.info(f"close_position_async, No open position to close for {symbol}")
+            logger.info(f"@@ close_position_async, No open position to close for {symbol}")
             return None
 
         # Determine closing side
