@@ -102,3 +102,12 @@ async def process_user_requests(ib, app_config, application_state):
     archive_user_requests(application_state, requests_needs_to_delete)
 
     # Mark the request as processed
+
+def save_archived_user_requests(application_state):
+    logger.info(f"Saving archived user requests...")
+    FileManager.save_named_json(
+        application_state.get('archived_user_requests', []),
+        "archived_user_requests",
+        mode='a',
+        min_interval_sec=5*60
+    )
