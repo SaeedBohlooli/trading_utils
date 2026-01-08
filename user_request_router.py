@@ -104,10 +104,13 @@ async def process_user_requests(ib, app_config, application_state):
     # Mark the request as processed
 
 def save_archived_user_requests(application_state):
-    logger.info(f"Saving archived user requests...")
-    FileManager.save_named_json(
-        application_state.get('archived_user_requests', []),
-        "archived_user_requests",
-        mode='a',
-        min_interval_sec=5*60
-    )
+    if application_state.get('archived_user_requests', []) != []:
+        logger.info(f"Saving archived user requests...")
+        FileManager.save_my_df(
+            application_state.get('archived_user_requests', []),
+            "archived_user_requests",
+            mode='a',
+            drop_duplicates=True
+        )
+        application_state['archived_user_requests'] = []
+
