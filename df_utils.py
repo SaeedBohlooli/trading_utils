@@ -99,8 +99,12 @@ def drop_dupplicates_in_file(file_path, unique_columns=[], keep='last'):
     return
 
 def save_df_to_csv(df=None, file_path='', mode='w', check_columns: bool = True, tabular: bool= False, drop_dupplicates=True, unique_columns=[], keep='last'):
-    if df is not None and len(df) == 0:
-        logger.warning("save_df_to_csv: Empty df, nothing to save.")
+    if df is None :
+        logger.warning("save_df_to_csv: df is None, nothing to save.")
+        return
+
+    if len(df) == 0 and mode == 'a':
+        logger.warning(f"save_df_to_csv: Empty df, mode = {mode}, nothing to save.")
         return
 
     save_df_to_csv_w_mode(df, file_path, mode=mode, check_columns=check_columns)
@@ -116,41 +120,113 @@ def save_df_to_csv(df=None, file_path='', mode='w', check_columns: bool = True, 
 
 
 def save_df_to_csv_w_mode(df, file_path: str, mode: str= None, check_columns: bool = True):
-    if df is None or len(df) == 0:
+    if df is None:
+        logger.warning("save_df_to_csv_w_mode: df is None, nothing to save.")
+        return
+    if len(df) == 0 and mode == 'a':
         logger.warning("save_df_to_csv_w_mode: Empty df, nothing to save.")
         return
 
-    if mode == 'w':
-        header = True
-    else:
-        # mode is a, we may need to check columns
-        if check_columns:
-            # mode is a, check columns
-            logger.debug(f"save_df_to_csv, file_path: {file_path}")
-            if os.path.exists(file_path):
-                existing_cols = pd.read_csv(file_path, nrows=0).columns.tolist()
-                # --- Compare with new df columns
-                if list(df.columns) == existing_cols:
-                    mode = 'a'
-                    header = False
-                else:  # columns are not same, we overwrite ...
-                    file_utils.create_a_backup(file_path)
-                    mode = 'w'
-                    header = True
-            else:
-                header = True
-        else:
-            header = False
+    if len(df) == 0 and mode == 'w':
+        logger.warning(f"save_df_to_csv_w_mode: Empty df, saving empty df to a file. file_path: {file_path}")
+        df.to_csv(file_path, mode=mode, index=False)
+        return
 
-    df.to_csv(file_path, mode=mode, index=False, header=header)
+    # -----------------------------------------
+    # WRITE MODE
+    # -----------------------------------------
+    if mode == 'w':
+        df.to_csv(file_path, mode='w', index=False, header=True)
+        return
+
+        # -----------------------------------------
+        # APPEND MODE (schema-aware)
+        # -----------------------------------------
+    if mode == 'a' and check_columns and os.path.exists(file_path):
+        # Read only header first (fast path)
+        existing_cols = pd.read_csv(file_path, nrows=0).columns.tolist()
+        new_cols = list(df.columns)
+
+        if existing_cols == new_cols:
+            # Fast path: exact match
+            df.to_csv(file_path, mode='a', index=False, header=False)
+            return
+
+        # -------------------------------
+        # Schema evolution path
+        # -------------------------------
+        logger.info(
+            f"save_df_to_csv_w_mode: Schema change detected, expanding columns. file_path: {file_path}"
+        )
+
+        # Read existing file fully (only when needed)
+        existing_df = pd.read_csv(file_path)
+
+        # Union of columns (preserve order: existing first, then new)
+        all_cols = list(dict.fromkeys(existing_cols + new_cols))
+
+        # Reindex both
+        existing_df = existing_df.reindex(columns=all_cols)
+        df = df.reindex(columns=all_cols)
+
+        # Backup before rewrite
+        file_utils.create_a_backup(file_path)
+
+        # Rewrite expanded file
+        existing_df.to_csv(file_path, mode='w', index=False, header=True)
+
+        # Append new rows
+        df.to_csv(file_path, mode='a', index=False, header=False)
+        return
+
+    # -----------------------------------------
+    # Append without column checking
+    # -----------------------------------------
+    header = not os.path.exists(file_path)
+    df.to_csv(file_path, mode='a', index=False, header=header)
     return
 
+    #     # mode is a, we may need to check columns
+    #     if check_columns:
+    #         # mode is a, check columns
+    #         logger.debug(f"save_df_to_csv, file_path: {file_path}")
+    #         if os.path.exists(file_path):
+    #             existing_cols = pd.read_csv(file_path, nrows=0).columns.tolist()
+    #             new_cols = list(df.columns)
+    #             # --- Compare with new df columns
+    #             if new_cols == existing_cols:
+    #                 mode = 'a'
+    #                 header = False
+    #             else:  # columns are not same, we overwrite ...
+    #                 file_utils.create_a_backup(file_path)
+    #                 mode = 'w'
+    #                 header = True
+    #         else:
+    #             header = True
+    #     else:
+    #         header = False
+    #
+    # df.to_csv(file_path, mode=mode, index=False, header=header)
+    # return
+
 def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=None):
+    if dest_file_path is None:
+        dest_file_path = f"{src_file_path}-txt.csv"
+
     logger.info(f"Started write_file_in_tabulate, src_file_path: {src_file_path}, dest_file_path: {dest_file_path}, number_of_rows: {number_of_rows}")
-    df = pd.read_csv(src_file_path)
+
+    try:
+        df = pd.read_csv(src_file_path)
+    except Exception as e:
+        # File is empty / only blank lines -> write an "empty table"
+        empty_table = tabulate(pd.DataFrame(), headers="keys", tablefmt="psql")
+        with open(dest_file_path, "w", encoding="utf-8") as f:
+            f.write(empty_table + "\n")
+        logger.info(f"Finished write_file_in_tabulate (empty csv), dest_file_path: {dest_file_path}")
+        return
+
     if len(df) > 0:
-        if dest_file_path is None:
-            dest_file_path = f"{src_file_path}-txt.csv"
+
         # Convert only object and bool columns to string (vectorized)
         # FIXME not happy to do that as may affect performance ...
         # for col in df.select_dtypes(include=['object', 'bool']):

@@ -181,7 +181,8 @@ def read_heartbeat_ts(path: str):
         return None
     try:
         ts = datetime.fromisoformat(open(path, "r").read().strip())
-        return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+        # return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+        return ts
     except Exception:
         return None
 
@@ -204,10 +205,24 @@ def is_heartbeat_healthy_from_cfg(hb_cfg: dict) -> bool:
     app_ts = read_heartbeat_ts(app_file)
     ib_ts = read_heartbeat_ts(ib_file)
 
+    is_healthy = True
+
     if not app_ts or not ib_ts:
+        logger.info(f"either app_ts ({app_ts}) or ib_ts ({ib_ts}) is None")
         return False
 
-    return (app_ts - ib_ts).total_seconds() <= max_lag
+    if (app_ts - ib_ts).total_seconds() > max_lag:
+        logger.info(f"app_ts too far ahead of ib_ts: app_ts={app_ts}, ib_ts={ib_ts}")
+        is_healthy = False
+        return is_healthy
+
+    now = datetime.now()
+    if (now - ib_ts).total_seconds() > max_lag:
+        logger.info(f"ib_ts too old: now={now}, ib_ts={ib_ts}")
+        is_healthy = False
+        return is_healthy
+
+    return is_healthy
 
 
 # -----------------------------------
