@@ -110,7 +110,9 @@ def save_archived_user_requests(application_state):
             application_state.get('archived_user_requests', []),
             "archived_user_requests",
             mode='a',
-            drop_duplicates=True
+            drop_duplicates=True,
+            save_tabular=True
+
         )
         application_state['archived_user_requests'] = []
 
