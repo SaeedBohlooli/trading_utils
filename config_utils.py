@@ -52,6 +52,12 @@ def load_app_config(portfolio_id, config_folder='',load_coommon=True):
     app_config.update(config)
     logger.info(f"loaded.")
 
+    for child_config in app_config.get('child_configs', []):
+        logger.info(f"loading child config: {child_config} ....")
+        child_cfg = load_config(f'{configs_folder}/{child_config}')
+        app_config.update(child_cfg)
+        logger.info(f"loaded. , child_config: {child_config}")
+
     return app_config
 
 def load_runtime_config(portfolio_id, config_folder='',load_coommon=False):
