@@ -233,10 +233,14 @@ def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=N
         #     df[col] = df[col].astype(str)
         with open(dest_file_path, 'w') as f:
             if number_of_rows:
-                f.write(tabulate(df[-number_of_rows:].astype(str), headers='keys', tablefmt='psql')) #, numalign=None, stralign='left'
+                # f.write(tabulate(df[-number_of_rows:].astype(str), headers='keys', tablefmt='psql')) #, numalign=None, stralign='left'
+                df = df[-number_of_rows:]
+                f.write(tabulate(df.astype(str), headers='keys', tablefmt='psql')) #, numalign=None, stralign='left'
             else:
                 # write all
-                f.write(tabulate(df.astype(str), headers='keys', tablefmt='psql'))
+                # f.write(tabulate(df.astype(str), headers='keys', tablefmt='psql'))
+                f.write(tabulate(df, headers='keys', tablefmt='psql', disable_numparse=True))
+
     logger.info(f"Finished write_file_in_tabulate, dest_file_path: {dest_file_path}")
     return
 
