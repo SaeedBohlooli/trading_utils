@@ -204,6 +204,8 @@ async def subscribe_symbol(ib, symbol, secType= None, exchange= None, currency=N
     # store mappings
     global_state.symbol_to_conid[symbol] = con_id
     global_state.conid_to_symbol[con_id] = symbol
+    global_state.conid_to_symbol_subscribed_for_quotes[con_id] = symbol
+    global_state.subscribed_symbols_count += 1
 
     return ticker
 
@@ -302,12 +304,16 @@ async def subscribe_contracts_to_market_data(ib, contracts):
     This is the FAST method: updates come automatically via callbacks.
     """
     for c in contracts:
+        logger.info(f"@@ subscribe_contracts_to_market_data: {c}")
+
+    for c in contracts:
         # request streaming market data
         logger.info(f"contract to subscribe: {c}")
         if c is None:
             logger.error(f"@@@@@@ subscribe_to_contracts: Encountered None contract — skipping contract: {c}")
             continue
-        if c.conId in global_state.conid_to_symbol:
+
+        if c.conId in global_state.conid_to_symbol_subscribed_for_quotes.keys():
             logger.warning(f"@ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
             continue
         ticker = ib.reqMktData(
@@ -322,9 +328,13 @@ async def subscribe_contracts_to_market_data(ib, contracts):
 
         symbol = c.localSymbol
         con_id = c.conId
+
         global_state.symbol_to_conid[symbol] = con_id
         global_state.conid_to_symbol[con_id] = symbol
+        global_state.conid_to_symbol_subscribed_for_quotes[con_id] = symbol
+
         logger.info(f"[ib_pricing_async] SUBSCRIBED: {symbol} (conId={con_id})")
+        global_state.subscribed_symbols_count += 1
 
     logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
     return
@@ -364,34 +374,44 @@ def get_all_quotes_as_dic():
     quotes = global_state.quote_cache
     return quotes
 
-async def XXXXunsubscribe_contract(ib, contract):
-    if contract is None:
-        logger.warning("@@@ [ERROR] unsubscribe_contract: contract is None — skipping")
-        return
 
-    # IBKR-side unsubscribe
-    try:
-        ib.cancelMktData(contract)
-    except Exception as e:
-        logger.warning(f"[WARN] cancelMktData failed: {e}")
+async def unsubscribe_contracts_from_market_data(ib, contracts):
+    """
+    Unsubscribe from continuous market data for given contracts.
+    This MUST be symmetric to reqMktData.
+    """
+    for c in contracts:
+        if c is None:
+            logger.error("@@@@@@ unsubscribe_contracts_from_market_data: Encountered None contract — skipping")
+            continue
 
-    # Remove from cache
-    quote_cache.pop(contract.conId, None)
+        con_id = c.conId
+        symbol = global_state.conid_to_symbol.get(con_id)
 
-    logger.warning(f"[ib_pricing_async] UNSUBSCRIBED: {contract.localSymbol} (conId={contract.conId})")
-    #
-    #  I dont think we need to log cache removal here, as it's done above
+        if con_id not in global_state.conid_to_symbol_subscribed_for_quotes:
+            logger.warning(f"@ unsubscribe_contracts_from_market_data: Not subscribed to conId={con_id}, skipping...")
+            continue
 
-    # # Remove from local cache
-    # removed = quote_cache.pop(contract.conId, None)
-    # if removed:
-    #     logger.info(
-    #         f"[CACHE REMOVED] {contract.localSymbol} | conId={contract.conId}"
-    #     )
-    # else:
-    #     logger.warning(
-    #         f"[CACHE MISS] Tried removing conId={contract.conId} but it was not found in quote_cache"
-    #     )
+        try:
+            logger.info(f"[unsubscribe_contracts_from_market_data] UNSUBSCRIBING: {symbol} (conId={con_id})")
+
+            # IMPORTANT: this is the real unsubscribe
+            ib.cancelMktData(c)
+
+
+            # remove from global_state.quote_cache
+            global_state.quote_cache.pop(con_id, None)
+            global_state.conid_to_symbol_subscribed_for_quotes.pop(con_id, None)  # This keeps which conid are subscribed ...
+
+            global_state.subscribed_symbols_count -= 1
+
+        except Exception as e:
+            logger.exception(
+                f"@@@@@@ Failed to unsubscribe conId={con_id}, symbol={symbol}: {e}"
+            )
+
+    logger.info(f"[unsubscribe_contracts_from_market_data] Unsubscribe completed.")
+    return
 
 
 def find_and_print_invalid_quotes(df):
