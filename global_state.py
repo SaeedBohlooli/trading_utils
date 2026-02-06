@@ -17,13 +17,14 @@ ib_config = {}
 # --------------
 
 quote_cache = {}
+conid_to_symbol_subscribed_for_quotes = {}  # conid -> symbol for subscribed quotes
 
 symbol_to_conid = {}        # Maps “SPX” → 416904
 conid_to_symbol = {}        # Reverse lookup
 contract_cache = {}     # symbol -> fully qualified contract object
 option_contract_cache = {}  # symbol+expiry+strike+right -> fully qualified contract object"
 conid_to_contract_cache = {} # conid -> fully qualified contract object
-
+subscribed_symbols_count = 0
 # Optional: define a helper for safe updates
 def update_quote(con_id, data):
     quote_cache[con_id] = data
@@ -59,3 +60,12 @@ def stringify_option_cache(cache: dict) -> dict:
         else:
             out[k] = str(v)
     return out
+
+
+def extract_symbols_from_quote_cache() :
+    symbols = []
+    for conid in quote_cache.keys():
+        symbol = conid_to_symbol.get(conid)
+        if symbol:
+            symbols.append(symbol)
+    return symbols

@@ -104,6 +104,8 @@ async def get_option_contract_by_conid(ib, con_id):
         logger.error(f" @@@ [get_option_contract_by_conid], Could not qualify contract for conid={con_id}")
         return None
     qc = qualified[0]
+    logger.info(f"[get_option_contract_by_conid], Qualified contract for conid= {con_id}, qc: {qc}" )
+    qc = qc.contract   # the object is ContractDetails, we take contract field
     global_state.conid_to_contract_cache[con_id] = qc
 
     return qc
