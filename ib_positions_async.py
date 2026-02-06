@@ -185,7 +185,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
     """
     logger.info(f"close_position_by_con_id, Closing position for symbol: {symbol}, con_id: {con_id}, side: {side}, qty_to_close: {qty_to_close}")
     if con_id is None:
-        return
+        return False
     # --- Step 1: get open positions
     positions = ib.positions()
 
@@ -196,7 +196,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
         position_qty = pos.position
         if position_qty == 0:
             logger.info(f"close_position_by_con_id, No open position to close for con_id: {con_id}")
-            return None
+            return False
 
         # Determine closing side
         action = "SELL" if position_qty > 0 else "BUY"
@@ -229,8 +229,8 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
 
         return True
 
-    logger.info(f"close_position_by_con_id, No position found for con_id={con_id} , order_ref: {order_ref}")
-    return None
+    logger.info(f"close_position_by_con_id, No position found for con_id= {con_id} , order_ref: {order_ref}")
+    return False
 
 
 async def close_all_open_position_async(ib, order_ref=None): # TODO use above method ...
