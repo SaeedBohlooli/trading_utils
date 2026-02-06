@@ -87,7 +87,11 @@ def extract_trades_with_prices(df):
                 if qty < 0:  # opening/add
                     pos += qty  # pos becomes negative
                     total_sell += abs(qty) * price
-                    open_price = total_sell / abs(pos)
+                    if pos == 0:
+                        # TODO we need to check why it is 0 - This methd neeed to be re-thought as we can have multiple sells and buys in between and we need to calculate the average price correctly ...
+                        logger.warning(f"Short position fully closed for {contract_localSymbol} at {row['execution_time']}, resetting total_sell and open_price.")
+                    else:
+                        open_price = total_sell / abs(pos)
                 elif qty > 0:  # buying to cover
                     buy_qty += qty
                     total_buy += qty * price

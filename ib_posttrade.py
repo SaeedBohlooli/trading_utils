@@ -187,7 +187,7 @@ def get_execution_map(df, contract_localSymbol, execution_orderRef):
     2. execution_orderRef: str
     """
     if df is None or df.empty:
-        return {}
+        return None
 
     row = df.loc[
         (df["contract_localSymbol"] == contract_localSymbol) &
@@ -195,10 +195,34 @@ def get_execution_map(df, contract_localSymbol, execution_orderRef):
     ]
 
     if row.empty:
-        return {}
+        return None
 
     r = row.iloc[0]
     return {
         "execution_price": r["execution_price"],
         "execution_shares": r["execution_shares"],
+        "execution_exec_id": r["execution_execId"]
+    }
+
+def get_commission_map(df, execution_exec_id):
+    """
+    This method gets commission info from ib_commission_df and returns as a dict.
+    can be used for commission lookup for executions.
+    1. execution_exec_id: str
+    """
+    if df is None or df.empty:
+        return None
+
+    row = df.loc[
+        (df["execId"] == execution_exec_id)
+    ]
+
+    if row.empty:
+        return None
+
+    r = row.iloc[0]
+    return {
+        "commission": r["commission"],
+        "realized_pnl": r["realizedPNL"],
+        "execution_exec_id": r["execId"]
     }
