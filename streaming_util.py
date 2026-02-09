@@ -71,3 +71,7 @@ def sanitize_for_json(obj, nan_value=None):
         return None if np.isnan(obj) or np.isinf(obj) else float(obj)
 
     return obj
+
+
+def convert_df_to_dic_for_stream(df):
+    return df.to_dict(orient="records")
