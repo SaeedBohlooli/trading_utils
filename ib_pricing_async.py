@@ -303,8 +303,8 @@ async def subscribe_contracts_to_market_data(ib, contracts):
     Subscribe once to continuous market data for all given contracts.
     This is the FAST method: updates come automatically via callbacks.
     """
-    for c in contracts:
-        logger.info(f"@@ subscribe_contracts_to_market_data: {c}")
+    # for c in contracts:
+    #     logger.info(f"@@ subscribe_contracts_to_market_data: {c}")
 
     for c in contracts:
         # request streaming market data
