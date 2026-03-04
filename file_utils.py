@@ -62,3 +62,10 @@ def save_a_map_to_file(map, file_path):
             # TODO add
             logger.error(e)
     return
+
+def copy_file(src, dst):
+    try:
+        shutil.copy(src, dst)
+        logger.info(f"File copied from {src} to {dst}")
+    except Exception as e:
+        logger.error(f"Error copying file from {src} to {dst}: {e}")
