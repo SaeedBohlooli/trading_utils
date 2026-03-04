@@ -47,12 +47,15 @@ async def calculate_market_session(ib: IB) -> dict:
 
     for segment in details.tradingHours.split(";"):
         logger.info(f"[MarketSession] Processing segment: {segment}")
+        # --- extract date first ---
+        segment_date = segment.split(":")[0]
+        if segment_date != today:  # There were cases that it was returning the previous date segment first
+            continue
+
         count_clone = segment.count(":")  # 20251214:CLOSED
-        if count_clone == 1:
+        if count_clone == 1:    #  or if segment.endswith("CLOSED"):
             date, hours = segment.split(":")
 
-            if date != today:
-                continue
 
             if hours == "CLOSED":
                 logger.info("[MarketSession] Market CLOSED today")
