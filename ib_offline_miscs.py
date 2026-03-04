@@ -139,9 +139,9 @@ def do_y(df):
 
     return summary_df
 
-def orchestrate(portfolio_id='p250'):
+def orchestrate(portfolio_id='p107'):
 
-    if portfolio_id == 'p250':
+    if portfolio_id == 'p107':
         ib_dir = f'../../portfolios/ib/{portfolio_id}'
         ib_pnl_dir = f'../../portfolios/ib-pnl/{portfolio_id}'
     else:
@@ -191,6 +191,6 @@ def orchestrate(portfolio_id='p250'):
 
 if __name__ == "__main__":
     logger.info(f"Starting ib_offline_miscs.py ...")
-    portfolio_id = 'p250'
+    portfolio_id = 'p107'
     orchestrate(portfolio_id)
     logger.info(f"Finished ib_offline_miscs.py ...")
