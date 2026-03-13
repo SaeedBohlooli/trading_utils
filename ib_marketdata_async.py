@@ -7,11 +7,13 @@ from typing import Optional, Dict, Tuple, List
 
 logger = logging.getLogger(__name__)
 
+# Map user-friendly timeframes to IB's bar size settings
 BAR_SIZE_MAP = {
     "1D": "1 day",
     "1H": "1 hour",
     "5m": "5 mins",
     "1m": "1 min",
+    "1min": "1 min",
     "1 day": "1 day",   # default ib syntax for bar size
     "1 hour": "1 hour", # default ib syntax for bar size
     "5 mins": "5 mins", # default ib syntax for bar size
@@ -19,10 +21,10 @@ BAR_SIZE_MAP = {
 }
 
 DEFAULT_DURATION_MAP = {
-    "1D": "60 D",     # 60 days of daily bars
-    "1H": "15 D",     # 15 days of hourly bars
-    "5m": "5 D",      # 5 days of 5-min bars
-    "1m": "5 D",      # 2 days of 1-min bars
+    "1 day": "60 D",     # 60 days of daily bars
+    "1 hour": "15 D",     # 15 days of hourly bars
+    "5 mins": "5 D",      # 5 days of 5-min bars
+    "1 min": "5 D",      # 2 days of 1-min bars
 }
 
 
@@ -51,7 +53,7 @@ async def get_stock_historical_data(
 
     # user did not specify duration → use smart default
     if duration is None:
-        duration = DEFAULT_DURATION_MAP[time_frame]
+        duration = DEFAULT_DURATION_MAP[ib_timeframe]
 
     use_cache = True
     if use_cache:
@@ -60,6 +62,8 @@ async def get_stock_historical_data(
         logger.info(f"get_stock_historical_data: Caching disabled.")
         if symbol == "MNQ":
             contract = Future('MNQ', contract_month, 'CME')
+        elif symbol == "SPX":
+            contract = Index(symbol=symbol, exchange="CBOE", currency="USD")
         else:
             contract = Stock(symbol, "SMART", "USD")
 
