@@ -42,20 +42,29 @@ async def process_user_requests(ib, app_config, application_state):
             symbol = user_request.get('symbol')
             if symbol:
                 logger.info(f"Closing position for symbol: {symbol}")
-                order_ref = ib_orders_async.generate_order_ref(application_state.get('portfolio_id'),event='CLOSE', symbol=symbol, unique_run_number=application_state.get('unique_run_number'))
-                if symbol == 'SPX': # TOD we need to andle if there are for more special symbols like this ...
-                    result = await ib_positions_async.close_position_by_con_id(ib, con_id=user_request.get('contract_id',-1) ,order_ref=order_ref)
-                else:
-                    result = await ib_positions_async.close_position_async(ib, symbol, order_ref=order_ref)
-
-                if result:
-                    logger.info(f"Successfully closed position for symbol: {symbol}")
+                portfolio_id = application_state.get('portfolio_id')
+                contract_type = user_request.get('contract_type', 'STK')
+                contract_id = user_request.get('contract_id', -1)
+                if portfolio_id.startswith('p107'):
+                    logger.info(f" Skipping close_position for symbol: {symbol} due to portfolio_id: {portfolio_id}")
+                    application_state.setdefault('forced_exit', []).append(user_request)
                     user_request['status'] += '|ENGINE_PROCESSED'
                     requests_needs_to_delete.append(user_request)
                 else:
-                    logger.info(f"NOT Successfully closed position for symbol: {symbol}")
-                    user_request['status'] += '|ENGINE_PROCESSED_ERROR'
-                    requests_needs_to_delete.append(user_request)
+                    order_ref = ib_orders_async.generate_order_ref(application_state.get('portfolio_id'),event='CLOSE', symbol=symbol, unique_run_number=application_state.get('unique_run_number'))
+                    if contract_type.upper() == 'OPTION':
+                        result = await ib_positions_async.close_position_by_con_id(ib, con_id=contract_id ,order_ref=order_ref)
+                    else:
+                        result = await ib_positions_async.close_position_async(ib, symbol, order_ref=order_ref)
+
+                    if result:
+                        logger.info(f"Successfully closed position for symbol: {symbol}")
+                        user_request['status'] += '|ENGINE_PROCESSED'
+                        requests_needs_to_delete.append(user_request)
+                    else:
+                        logger.info(f"NOT Successfully closed position for symbol: {symbol}")
+                        user_request['status'] += '|ENGINE_PROCESSED_ERROR'
+                        requests_needs_to_delete.append(user_request)
             else:
                 logger.warning("No symbol provided for close_position action.")
         elif user_request.get('request_type', '').lower() == 'close_all_positions':
