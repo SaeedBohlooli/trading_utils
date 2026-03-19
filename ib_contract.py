@@ -1,4 +1,4 @@
-from ib_async import IB, Contract, Stock, Option, Future
+from ib_async import IB, Contract, Stock, Option, Future, Index
 import logging
 from trading_utils import global_state
 
@@ -23,6 +23,8 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
 
     if symbol == 'MNQ':
         contract = Future('MNQ', contract_month, 'CME')
+    elif symbol == 'SPX':
+        contract = Index(symbol=symbol, exchange="CBOE", currency="USD")
     else:
         contract = Stock(symbol, "SMART", "USD")
 
