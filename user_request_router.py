@@ -85,8 +85,12 @@ async def process_user_requests(ib, app_config, application_state):
                 user_request['status'] += '|ENGINE_PROCESSED'
                 requests_needs_to_delete.append(user_request)
 
-        elif user_request.get('request_type', '').lower() == 'open_order_from_control_panel':
-            logger.info("checking OPEN_ORDER_FROM_CONTROL_PANEL ... .")
+        elif user_request.get('request_type', '').lower() in (
+            'open_order_from_control_panel',
+            'open_order_from_xui',
+        ):
+            req_type = user_request.get('request_type', '')
+            logger.info(f"checking {req_type} (external open order) ...")
 
             symbol = user_request.get('symbol')
             quantity = int(user_request.get('quantity',0))
@@ -97,14 +101,38 @@ async def process_user_requests(ib, app_config, application_state):
             expiry = int(user_request.get('expiry',''))
             web_request_id = user_request.get('web_request_id','')
 
-            logger.info(f"OPEN_ORDER_FROM_CONTROL_PANEL ... Placing order for {symbol}, quantity: {quantity}, side: {side}, order_type: {order_type}, strike: {strike}, expiry: {expiry} .")
-            order_ref = ib_orders_async.generate_order_ref(application_state.get('portfolio_id'),event='OPEN', unique_run_number=application_state.get('unique_run_number'), alias='CONTROL_PANEL_ORDER')
+            logger.info(
+                f"{req_type} ... Placing order for {symbol}, quantity: {quantity}, side: {side}, "
+                f"order_type: {order_type}, strike: {strike}, expiry: {expiry} ."
+            )
+            alias = 'XUI_ORDER' if req_type.upper() == 'OPEN_ORDER_FROM_XUI' else 'CONTROL_PANEL_ORDER'
+            order_ref = ib_orders_async.generate_order_ref(
+                application_state.get('portfolio_id'),
+                event='OPEN',
+                unique_run_number=application_state.get('unique_run_number'),
+                alias=alias,
+            )
             if order_type.lower() == 'option':
-                result = await ib_orders_async.submit_option_order_single_leg(ib, symbol=symbol, total_quantity=quantity, side=side, right=right,  strike=strike, expiry=expiry, order_ref=order_ref)
+                result = await ib_orders_async.submit_option_order_single_leg(
+                    ib,
+                    symbol=symbol,
+                    total_quantity=quantity,
+                    side=side,
+                    right=right,
+                    strike=strike,
+                    expiry=expiry,
+                    order_ref=order_ref,
+                )
                 if result:
-                    logger.info("Successfully placed order from control panel.")
+                    logger.info(f"Successfully placed order ({req_type}).")
                     user_request['status'] += '|ENGINE_PROCESSED'
                     requests_needs_to_delete.append(user_request)
+                else:
+                    logger.warning(
+                        f"{req_type}: order not placed (contract qualify failed or submit returned no trade). "
+                        f"symbol={symbol} strike={strike} expiry={expiry} right={right} side={side}. "
+                        f"Check engine logs for 'Could not qualify contract'."
+                    )
 
 
 
