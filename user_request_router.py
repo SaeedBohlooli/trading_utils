@@ -47,7 +47,7 @@ async def process_user_requests(ib, app_config, application_state):
                 contract_id = user_request.get('contract_id', -1)
                 if portfolio_id.startswith('p107'):
                     logger.info(f" Skipping close_position for symbol: {symbol} due to portfolio_id: {portfolio_id}")
-                    application_state.setdefault('forced_exit', []).append(user_request)
+                    application_state.setdefault('forced_exits', []).append(user_request)
                     user_request['status'] += '|ENGINE_PROCESSED'
                     requests_needs_to_delete.append(user_request)
                 else:
