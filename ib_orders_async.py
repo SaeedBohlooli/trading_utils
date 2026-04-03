@@ -19,6 +19,29 @@ from trading_utils import ib_posttrade
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_option_right(right) -> str:
+    """IB expects 'C' or 'P' for single-leg options."""
+    if right is None:
+        return "C"
+    s = str(right).strip().upper()
+    if s in ("C", "CALL", "CALLS"):
+        return "C"
+    if s in ("P", "PUT", "PUTS"):
+        return "P"
+    return s[:1] if s else "C"
+
+
+def _normalize_expiry_yyyymmdd(expiry):
+    """Keep yyyymmdd as string for Option.lastTradeDateOrContractMonth (IB-friendly)."""
+    if expiry is None or expiry == "":
+        return expiry
+    if isinstance(expiry, int):
+        return str(expiry)
+    s = str(expiry).strip()
+    return s
+
+
 CONTRACT_TYPE_MAP = {
     Stock: "STOCK",
     Option: "OPTION",
@@ -62,7 +85,16 @@ def submit_option_order_multi_leg(ib, legs, total_quantity, root_symbol, order_r
 async def submit_option_order_single_leg(ib, symbol=None, expiry=0, strike=0, right=None, side=None, total_quantity=0, order_ref=None, exchange=None, currency=None, trading_class=None):
     # Combo Contract
 
-    logger.info(f"Placing single leg option order for {symbol} {expiry} {strike} {right} {side} qty={total_quantity} {exchange} {currency} {trading_class} order_ref={order_ref}")
+    right = _normalize_option_right(right)
+    expiry = _normalize_expiry_yyyymmdd(expiry)
+    side_s = str(side or "long").strip().lower()
+    action = "BUY" if side_s in ("buy", "long") else "SELL"
+
+    logger.info(
+        f"Placing single leg option order action={action} (side={side!r}) {symbol} "
+        f"exp={expiry} strike={strike} right={right} qty={total_quantity} "
+        f"exchange={exchange} currency={currency} trading_class={trading_class} order_ref={order_ref}"
+    )
 
     if exchange is None:
         reg = global_state.symbol_registry.get(symbol)
@@ -88,19 +120,20 @@ async def submit_option_order_single_leg(ib, symbol=None, expiry=0, strike=0, ri
         currency=currency,
         tradingClass=trading_class)
 
-    action = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL'
-
     # 2) Qualify contract (fills in conId etc.)
     qualified = await ib.qualifyContractsAsync(contract)
     if not qualified:
-        logger.error(f"Could not qualify contract (check symbol/expiry/strike/exchange). {symbol} {expiry} {strike} {right} {exchange} {currency} {trading_class}")
+        logger.error(
+            f"Could not qualify contract (check symbol/expiry/strike/right). "
+            f"{symbol} exp={expiry} strike={strike} right={right} {exchange} {currency} {trading_class}"
+        )
         return
 
     contract = qualified[0]
     print("Qualified:", contract)
 
     order = MarketOrder(action, totalQuantity=total_quantity)
-    logger.info(f"TODO {order}")
+    logger.info(f"MarketOrder action={action} totalQuantity={total_quantity}")
     if order_ref:
         order.orderRef = order_ref
 
@@ -116,9 +149,8 @@ async def submit_option_order_single_leg(ib, symbol=None, expiry=0, strike=0, ri
 async def submit_option_order_prequalified_contract(ib, q_contract, side, total_quantity=0, order_ref=None):
     # Combo Contract
 
-
-    action = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL'
-
+    side_s = str(side or "long").strip().lower()
+    action = "BUY" if side_s in ("buy", "long") else "SELL"
 
     print("Qualified:", q_contract)
 
