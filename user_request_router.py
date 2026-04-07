@@ -98,7 +98,7 @@ async def process_user_requests(ib, app_config, application_state):
             right = user_request.get('right','C')
             order_type = user_request.get('order_type','Option')
             strike = float(user_request.get('strike',0))
-            expiry = int(user_request.get('expiry',''))
+            expiry = int(user_request.get('expiry',0))
             web_request_id = user_request.get('web_request_id','')
 
             logger.info(
