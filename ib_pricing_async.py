@@ -230,6 +230,7 @@ async def get_or_subscribe_symbol_price(ib,
             # return None
         if attempt > 3:
             logger.error(f"@@ get_or_subscribe_symbol_price: Failed to get conId for symbol: {symbol} after {attempt} attempts.")
+            await asyncio.sleep(poll_interval)
 
 
     start = time.time()
