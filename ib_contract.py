@@ -67,8 +67,11 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     cache = global_state.option_contract_cache
 
     # Cache hit
-    if key in cache:
+    res = cache.get(key)
+    if res is not None:
         return cache[key]
+
+    logger.info(f"[get_option_contract_cached], Cache miss for key: {key}, creating and qualifying new contract.")
 
     if trading_class is None:
         trading_class = "SPXW" if symbol == "SPX" else symbol
@@ -88,8 +91,6 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
 
     qualified = await ib.qualifyContractsAsync(contract)
 
-    if not qualified:
-        raise RuntimeError(f" @@@ Could not qualify contract for key={key}")
     qc = qualified[0]
     cache[key] = qc
 
