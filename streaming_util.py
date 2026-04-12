@@ -83,9 +83,7 @@ def df_to_stream_payload(
                 child_map = (
                     child_df
                     .groupby(key_col)
-                    .apply(lambda g: g.drop(columns=[key_col]).to_dict("records"))
-                    .to_dict()
-                )
+                    .apply(lambda g: g.reset_index(drop=True).drop(columns=[key_col], errors='ignore').to_dict("records")).to_dict())
                 logger.info(f"child_map created with {len(child_map)} groups")
                 logger.info(f"child_map keys: {list(child_map.keys())}")
             except Exception as e:
