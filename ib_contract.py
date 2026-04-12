@@ -92,6 +92,8 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     qualified = await ib.qualifyContractsAsync(contract)
 
     qc = qualified[0]
+    if qc is None:
+        logger.info(f"[get_option_contract_cached], @@@ Could not qualify contract for symbol={symbol}, key: {key}")
     cache[key] = qc
 
     return qc

@@ -343,7 +343,7 @@ async def subscribe_contracts_to_market_data(ib, contracts):
 async def get_or_subscribe_option_price(ib, symbol=None, expiry=None,strike=None, right=None):
     contract = await ib_contract.get_option_contract_cached(ib, symbol, expiry, strike, right)
     if contract is None:
-        logger.warning(f"get_or_subscribe_symbol_price: contract is None for symbol: {symbol}, expiry: {expiry}, strike: {strike}, right: {right}")
+        logger.warning(f"[get_or_subscribe_option_price] @@@ get_or_subscribe_symbol_price: contract is None for symbol: {symbol}, expiry: {expiry}, strike: {strike}, right: {right}")
         return np.nan, np.nan, np.nan
     await subscribe_contracts_to_market_data(ib, [contract])
 
