@@ -624,3 +624,10 @@ def find_bid_ask(df, symbol, strike, expiry=None, right=None):
     r = row.iloc[0]
 
     return {'bid': r["bid"], 'ask': r["ask"], 'timestamp': r["timestamp"]}
+
+def round_based_on_symbol(symbol, price):
+    if symbol == 'MNQ':
+        return round(price / 5) * 5  # returns 10,15,20 ...
+        # return (price // 5) * 5 This returns the floor ..
+    else:
+        return price

@@ -12,9 +12,8 @@ from trading_utils import global_state
 
 sys.path.insert(0, f'../')
 
-from trading_utils import ib_utils
 from trading_utils import date_utils
-from trading_utils import ib_pricing
+from trading_utils import ib_pricing_async
 from trading_utils import ib_posttrade
 
 logger = logging.getLogger(__name__)
@@ -469,8 +468,8 @@ async def cancel_open_orders_by_order_ref(
 
 async def submit_linear_order_with_sl_tp(ib, side, contract, stop_loss_price, take_profit_price, quantity, order_ref, candle_date=''):
 
-    tp_price = ib_pricing.round_based_on_symbol(contract.symbol, take_profit_price)
-    sl_price = ib_pricing.round_based_on_symbol(contract.symbol, stop_loss_price)
+    tp_price = ib_pricing_async.round_based_on_symbol(contract.symbol, take_profit_price)
+    sl_price = ib_pricing_async.round_based_on_symbol(contract.symbol, stop_loss_price)
 
     parent_order_id = ib.client.getReqId()
     side = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL' # unify ..
