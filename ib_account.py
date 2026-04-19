@@ -23,3 +23,12 @@ async def get_ib_account_info(ib: IB) -> dict:
     except Exception as e:
         logger.exception(f"❌ Error updating account info: {e}")
         return {}
+
+
+async def populate_ib_account_info(ib, application_state):
+    """
+    Update the application state to reflect account information.
+    """
+    application_state["ib_account_info"] = await get_ib_account_info(ib)
+
+    return
