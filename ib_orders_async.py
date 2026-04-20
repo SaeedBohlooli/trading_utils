@@ -12,9 +12,8 @@ from trading_utils import global_state
 
 sys.path.insert(0, f'../')
 
-from trading_utils import ib_utils
 from trading_utils import date_utils
-from trading_utils import ib_pricing
+from trading_utils import ib_pricing_async
 from trading_utils import ib_posttrade
 
 logger = logging.getLogger(__name__)
@@ -146,7 +145,7 @@ async def submit_option_order_single_leg(ib, symbol=None, expiry=0, strike=0, ri
 
     return trade
 
-async def submit_option_order_prequalified_contract(ib, q_contract, side, total_quantity=0, order_ref=None):
+async def submit_option_order_prequalified_contract(ib, q_contract, side, total_quantity=0, order_ref=None, ib_account_id=None):
     # Combo Contract
 
     side_s = str(side or "long").strip().lower()
@@ -159,6 +158,8 @@ async def submit_option_order_prequalified_contract(ib, q_contract, side, total_
     if order_ref:
         order.orderRef = order_ref
 
+    if ib_account_id and ib_account_id != "":
+        order.account = ib_account_id
 
     trade = ib.placeOrder(q_contract, order)
     trade.fillEvent += ib_posttrade.on_fill
@@ -469,8 +470,8 @@ async def cancel_open_orders_by_order_ref(
 
 async def submit_linear_order_with_sl_tp(ib, side, contract, stop_loss_price, take_profit_price, quantity, order_ref, candle_date=''):
 
-    tp_price = ib_pricing.round_based_on_symbol(contract.symbol, take_profit_price)
-    sl_price = ib_pricing.round_based_on_symbol(contract.symbol, stop_loss_price)
+    tp_price = ib_pricing_async.round_based_on_symbol(contract.symbol, take_profit_price)
+    sl_price = ib_pricing_async.round_based_on_symbol(contract.symbol, stop_loss_price)
 
     parent_order_id = ib.client.getReqId()
     side = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL' # unify ..
