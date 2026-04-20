@@ -315,7 +315,7 @@ async def subscribe_contracts_to_market_data(ib, contracts):
             continue
 
         if c.conId in global_state.conid_to_symbol_subscribed_for_quotes.keys():
-            logger.warning(f"@ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
+            logger.debug(f"@ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
             continue
         ticker = ib.reqMktData(
             c,
