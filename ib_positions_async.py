@@ -161,6 +161,8 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
         order.tif = 'GTC'  # Good Till Cancelled
         if order_ref is not None:
             order.orderRef = order_ref
+        if getattr(pos, "account", None):
+            order.account = pos.account
 
         pos.contract.exchange = "SMART"  # Ensure exchange is set
         # Place order
@@ -218,6 +220,8 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
         order.tif = 'GTC'  # Good Till Cancelled
         if order_ref is not None:
             order.orderRef = order_ref
+        if getattr(pos, "account", None):
+            order.account = pos.account
 
         pos.contract.exchange = "SMART"  # Ensure exchange is set
 
@@ -260,6 +264,8 @@ async def close_all_open_position_async(ib, order_ref=None): # TODO use above me
         if order_ref is not None:
             order_ref = order_ref.replace("#symbol#", pos.contract.symbol)
             order.orderRef = order_ref
+        if getattr(pos, "account", None):
+            order.account = pos.account
 
         pos.contract.exchange = "SMART"  # Ensure exchange is set
         # Place order
@@ -315,6 +321,8 @@ def close_option_position(ib, symbol=None, qty_to_close= None, order_ref=None):
         order.tif = 'GTC'  # Good Till Cancelled
         if order_ref is not None:
             order.orderRef = order_ref
+        if getattr(pos, "account", None):
+            order.account = pos.account
 
         pos.contract.exchange = "SMART"  # Ensure exchange is set
 
