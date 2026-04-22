@@ -114,3 +114,22 @@ async def get_option_contract_by_conid(ib, con_id):
     global_state.conid_to_contract_cache[con_id] = qc
 
     return qc
+
+async def get_nearest_future_contract_month(ib, symbol="MNQ", exchange='CME'):
+    logger.info(f"Finding first contract month for future symbol={symbol} on exchange={exchange} ...")
+
+    contract = Future(symbol=symbol, exchange=exchange)
+    details = await ib.reqContractDetailsAsync(contract)
+    contract_months = []
+    for d in details:
+        c = d.contract
+        contract_months.append(c.lastTradeDateOrContractMonth)
+        # logger.info(f"[get_nearest_future_contract_month] localSymbol: {c.localSymbol}")
+        # logger.info(f"[get_nearest_future_contract_month] contractMonth:{c.lastTradeDateOrContractMonth}  , type: {type(c.lastTradeDateOrContractMonth)}")
+
+    contract_months = sorted(contract_months)
+    logger.info(f"[get_nearest_future_contract_month], sorted, contract_months: {contract_months}")
+    if len(contract_months) > 1:
+        return contract_months[0][:6]
+    else:
+        return None
