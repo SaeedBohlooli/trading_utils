@@ -40,7 +40,7 @@ def compute_technical_indicators(app_config, application_state, symbol, df):
             logger.debug(f"[compute_technical_indicators] Execution context: FULL unrestricted access (globals + locals)")
 
             # Execute calculation (supports both single-line eval and multi-line code)
-            logger.info(f"[compute_technical_indicators] Executing multi-line calculation")
+            logger.info(f"[compute_technical_indicators] Executing multi-line calculation: \n{calculation}")
             exec(calculation, globals(), local_ctx)
             df = local_ctx['df']
 
