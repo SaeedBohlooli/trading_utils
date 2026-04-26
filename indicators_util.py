@@ -6,11 +6,10 @@ import numpy as np
 import pandas as pd
 
 import logging
-
+from trading_core import application_state_router
 logger = logging.getLogger(__name__)
 
 def compute_technical_indicators(app_config, application_state, symbol, df):
-    df = df.copy()
 
     # Process each indicator
     for key, indic in app_config.get('indicators', {}).get('details', {}).items():
@@ -19,7 +18,7 @@ def compute_technical_indicators(app_config, application_state, symbol, df):
 
             # Extract fields
             active = indic.get('active', False)
-            outputs_in_application_state = indic.get('outputs_in_application_state')
+            outputs_in_application_state = indic.get('outputs_in_application_state', [])
             calculation = indic.get('calculation')
 
             logger.debug(f"[compute_technical_indicators] {key}: active={active} ")
@@ -33,13 +32,12 @@ def compute_technical_indicators(app_config, application_state, symbol, df):
                 continue
 
             # Compute indicator
-            logger.info(f"[compute_technical_indicators] Computing for {symbol}")
+            logger.info(f"[compute_technical_indicators] Computing for {symbol}, {key}")
 
             # Create local context - copy all local variables
             local_ctx = locals().copy()
 
-            logger.debug(
-                f"[compute_technical_indicators] Execution context: FULL unrestricted access (globals + locals)")
+            logger.debug(f"[compute_technical_indicators] Execution context: FULL unrestricted access (globals + locals)")
 
             # Execute calculation (supports both single-line eval and multi-line code)
             logger.info(f"[compute_technical_indicators] Executing multi-line calculation")
@@ -61,7 +59,10 @@ def compute_technical_indicators(app_config, application_state, symbol, df):
             logger.error(f"[compute_technical_indicators] Error processing indicator {key}: {e}")
             import traceback
             logger.error(f"[compute_technical_indicators] Traceback: {traceback.format_exc()}")
+            application_state_router.add_audit_message(application_state, f"Error computing indicator {key} for {symbol}: {e}")
             continue
+    if app_config.get('indicators', {}).get('print_last_few_rows', False):
+        logger.info(f"[compute_technical_indicators] Printing last few rows .. \n{df[-5:].to_markdown()}")
 
     logger.debug(f"[compute_technical_indicators] Completed for {symbol}")
     return df
