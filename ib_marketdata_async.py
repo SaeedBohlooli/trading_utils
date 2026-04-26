@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 # Map user-friendly timeframes to IB's bar size settings
 BAR_SIZE_MAP = {
     "1D": "1 day",
+    "1d": "1 day",
     "1H": "1 hour",
+    "1h": "1 hour",
     "5m": "5 mins",
     "1m": "1 min",
     "1min": "1 min",
@@ -52,7 +54,7 @@ async def get_stock_historical_data(
     ib_timeframe = BAR_SIZE_MAP[time_frame]
 
     # user did not specify duration → use smart default
-    if duration is None:
+    if duration is None or duration =="":
         duration = DEFAULT_DURATION_MAP[ib_timeframe]
 
     use_cache = True

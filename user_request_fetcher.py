@@ -25,5 +25,4 @@ def fetch_user_request(app_config, application_state):
         return user_requests
     except Exception as e:
         logger.warning(f"@@ Unexpected error in fetch_user_request: {e}")
-        # logger.warning(f"@@@ {trace}")
         return {}

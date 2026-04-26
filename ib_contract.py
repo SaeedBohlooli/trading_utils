@@ -16,13 +16,13 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
 
     # 1) If already cached → return it immediately
     if symbol in cache:
-        logger.info(f"[CONTRACT_CACHE] Returning cached contract for symbol={symbol}")
+        logger.info(f"[get_cached_contract] Returning cached contract for symbol={symbol}")
         return cache[symbol]
 
-    logger.info(f"[CONTRACT_CACHE] Qualifying new contract for symbol={symbol}")
+    logger.info(f"[get_cached_contract] Qualifying new contract for symbol={symbol}")
 
-    if symbol == 'MNQ':
-        contract = Future('MNQ', contract_month, 'CME')
+    if contract_month != None:
+        contract = Future(symbol, contract_month, 'CME')
     elif symbol == 'SPX':
         contract = Index(symbol=symbol, exchange="CBOE", currency="USD")
     else:
@@ -31,7 +31,7 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
     # Qualify once (async)
     qualified = await ib.qualifyContractsAsync(contract)
     if not qualified:
-        raise RuntimeError(f" @@@ Could not qualify contract for symbol={symbol}")
+        raise RuntimeError(f"[get_cached_contract] @@@ Could not qualify contract for symbol={symbol}")
 
     qualified_contract = qualified[0]
 
@@ -43,7 +43,7 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
         global_state.conid_to_symbol[qualified_contract.conId] = symbol
 
     logger.info(
-        f"[CONTRACT_CACHE] Cached contract for {symbol}, conId={qualified_contract.conId}"
+        f"[get_cached_contract] Cached contract for {symbol}, conId={qualified_contract.conId}"
     )
 
     return qualified_contract

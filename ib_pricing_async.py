@@ -169,6 +169,10 @@ async def subscribe_symbol(ib, symbol, secType= None, exchange= None, currency=N
             secType = reg.get("secType")
             exchange = reg.get("exchange", exchange)
             currency = reg.get("currency", currency)
+        elif contract_month is not None:
+            secType = "FUT"
+            exchange = "CME"
+            currency = "USD"
         else:
             # it is STK by default
             secType = "STK"
