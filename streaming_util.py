@@ -128,6 +128,14 @@ def sanitize_for_json(obj, nan_value=None):
     if isinstance(obj, list):
         return [sanitize_for_json(v, nan_value) for v in obj]
 
+    # Handle numpy booleans like np.True_
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+
+    # Handle numpy ints like np.int64
+    if isinstance(obj, np.integer):
+        return int(obj)
+
     if isinstance(obj, float):
         return None if math.isnan(obj) or math.isinf(obj) else obj
 
