@@ -45,7 +45,7 @@ def compute_technical_indicators(app_config, application_state, symbol, df):
             df = local_ctx['df']
 
             for n in outputs_in_application_state:
-                logger.info(f"pulling {n}")
+                logger.info(f"[compute_technical_indicators] pulling {n}")
                 last = df[n].iloc[-1]
                 if isinstance(last, (int, float)):
                     last = round(float(last), 2)

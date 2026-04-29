@@ -87,22 +87,22 @@ def seconds_passed_since_last_record(df, column_name='date'):
     try:
         # Check empty DataFrame
         if df.empty:
-            logger.warning("DataFrame is empty. Cannot compute time difference.")
+            logger.warning("[seconds_passed_since_last_record] DataFrame is empty. Cannot compute time difference.")
             return None
 
         last_time = df.iloc[-1][column_name]
 
         # If conversion failed or is NaT
         if pd.isna(last_time):
-            logger.warning("Last timestamp is invalid (NaT).")
+            logger.warning("[seconds_passed_since_last_record] Last timestamp is invalid (NaT).")
             return None
         now = datetime.datetime.now(pytz.timezone("America/New_York"))
-        logger.info(f"seconds_passed_since_last_record, Current time (NY): {now}, Last record time: {last_time}")
+        logger.info(f"[seconds_passed_since_last_record] seconds_passed_since_last_record, Current time (NY): {now}, Last record time: {last_time}")
         seconds_passed = (now - last_time).total_seconds()
         return seconds_passed
 
     except Exception as e:
-        logger.error(f"TODO Error in minutes_since_last_record: {e}", exc_info=True)
+        logger.error(f"[seconds_passed_since_last_record] Error in minutes_since_last_record: {e}", exc_info=True)
         return None
 
 def next_fridays(n=10):
