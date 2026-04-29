@@ -56,8 +56,6 @@ def get_position_qty(ib, symbol):
     p = get_position_by_symbol(ib, symbol)
     return p.position if p else 0
 
-
-
 def convert_positions_to_dict(ib):
     out = []
 
@@ -114,7 +112,6 @@ def convert_positions_to_dict(ib):
         out.append(d)
 
     return out
-
 
 # TODO change to close_position_by_symbiol
 # TODO Thisis very dangerous. bcs for SPX options, will close all positions ...
@@ -177,7 +174,7 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
     logger.warning(f"@@@ close_position_async, No position found for symbol={symbol}, order_ref: {order_ref}")
     return False
 
-def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None):
+def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None, exchange= None):
     # TODO check side to make sure we are closing correctly ...
     # THIS IS VERY IMPORTANT TO AVOID MISTAKES
     """
@@ -185,7 +182,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
     - If long → send SELL
     - If short → send BUY
     """
-    logger.info(f"close_position_by_con_id, Closing position for symbol: {symbol}, con_id: {con_id}, side: {side}, qty_to_close: {qty_to_close}")
+    logger.info(f"[close_position_by_con_id], Closing position for symbol: {symbol}, con_id: {con_id}, side: {side}, qty_to_close: {qty_to_close}")
     if con_id is None:
         return False
     # --- Step 1: get open positions
@@ -197,7 +194,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
 
         position_qty = pos.position
         if position_qty == 0:
-            logger.info(f"close_position_by_con_id, No open position to close for con_id: {con_id}")
+            logger.info(f"[close_position_by_con_id], No open position to close for con_id: {con_id}")
             return False
 
         # Determine closing side
@@ -209,7 +206,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
             qty_to_close = abs(position_qty)
 
 
-        logger.info(f"close_position_by_con_id, Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty}) , order_ref: {order_ref}")
+        logger.info(f"[close_position_by_con_id], Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty}) , order_ref: {order_ref}")
 
         # Create a market order
         order = Order(
@@ -223,19 +220,21 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
         if getattr(pos, "account", None):
             order.account = pos.account
 
-        pos.contract.exchange = "SMART"  # Ensure exchange is set
+        if exchange is None or exchange == "":
+            pos.contract.exchange = "SMART"  # Ensure exchange is set
+        else:
+            pos.contract.exchange = "CME" # for Futures ...
 
         # Place order
         trade = ib.placeOrder(pos.contract, order)
         trade.fillEvent += ib_posttrade.on_fill
-        logger.info(f"close_position_by_con_id, Order sent ....")
-        logger.info(f"close_position_by_con_id, trade: {trade}")
+        logger.info(f"[close_position_by_con_id], Order sent ....")
+        logger.info(f"[close_position_by_con_id], trade: {trade}")
 
         return True
 
-    logger.info(f"close_position_by_con_id, No position found for con_id= {con_id} , order_ref: {order_ref}")
+    logger.info(f"[close_position_by_con_id],@@@@ No position found for con_id= {con_id} , order_ref: {order_ref}")
     return False
-
 
 async def close_all_open_position_async(ib, order_ref=None): # TODO use above method ...
 
