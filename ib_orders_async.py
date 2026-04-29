@@ -275,7 +275,7 @@ async def convert_open_orders_to_dict(ib: IB):
 
         # # Keep only active orders
         if status  in ("Cancelled", 'Filled'):
-            logger.info(f"convert_open_orders_to_dict: Skipping orderId={t.order.orderId} with status={status}")
+            logger.info(f"[convert_open_orders_to_dict] Skipping orderId={t.order.orderId} with status={status}")
             continue
 
         o = t.order
@@ -286,8 +286,8 @@ async def convert_open_orders_to_dict(ib: IB):
         if o.totalQuantity == 0:
             continue
 
-        logger.info(f"convert_open_orders_to_dict: Processing orderId={o.orderId}")
-        logger.info(f"convert_open_orders_to_dict:   status={status}, action={o.action}, qty={o.totalQuantity}, filled={t.orderStatus.filled}, remaining={t.orderStatus.remaining}, limit_price={o.lmtPrice}, aux_price={o.auxPrice}")
+        logger.info(f"[convert_open_orders_to_dict]: Processing orderId={o.orderId}")
+        logger.info(f"[convert_open_orders_to_dict]:   status={status}, action={o.action}, qty={o.totalQuantity}, filled={t.orderStatus.filled}, remaining={t.orderStatus.remaining}, limit_price={o.lmtPrice}, aux_price={o.auxPrice}")
 
         d = {
             # --------------------
@@ -356,8 +356,8 @@ async def convert_open_orders_to_dict(ib: IB):
         d["legs"] = []
 
         if isinstance(c, Bag):
-            logger.info(f"convert_open_orders_to_dict: orderId={o.orderId} is a BAG with {len(c.comboLegs or [])} legs")
-            logger.info(f"convert_open_orders_to_dict: comboLegs: {pprint.pformat(c.comboLegs)}")
+            logger.info(f"[convert_open_orders_to_dict] orderId={o.orderId} is a BAG with {len(c.comboLegs or [])} legs")
+            logger.info(f"[convert_open_orders_to_dict] comboLegs: {pprint.pformat(c.comboLegs)}")
             for leg in c.comboLegs or []:
                 # opt = await resolve_option_by_conid(
                 #     ib,
