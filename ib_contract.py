@@ -19,9 +19,9 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
         logger.info(f"[get_cached_contract] Returning cached contract for symbol={symbol}")
         return cache[symbol]
 
-    logger.info(f"[get_cached_contract] Qualifying new contract for symbol={symbol}")
+    logger.info(f"[get_cached_contract] Qualifying new contract for symbol={symbol}, contract_month: {contract_month}")
 
-    if contract_month != None:
+    if contract_month is not None:
         contract = Future(symbol, contract_month, 'CME')
     elif symbol == 'SPX':
         contract = Index(symbol=symbol, exchange="CBOE", currency="USD")
@@ -42,8 +42,7 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
         global_state.symbol_to_conid[symbol] = qualified_contract.conId
         global_state.conid_to_symbol[qualified_contract.conId] = symbol
 
-    logger.info(
-        f"[get_cached_contract] Cached contract for {symbol}, conId={qualified_contract.conId}"
+    logger.info(f"[get_cached_contract] Cached contract for {symbol}, conId={qualified_contract.conId}"
     )
 
     return qualified_contract
@@ -116,7 +115,7 @@ async def get_option_contract_by_conid(ib, con_id):
     return qc
 
 async def get_nearest_future_contract_month(ib, symbol="MNQ", exchange='CME'):
-    logger.info(f"Finding first contract month for future symbol={symbol} on exchange={exchange} ...")
+    logger.info(f"[get_nearest_future_contract_month] Finding first contract month for future symbol={symbol} on exchange={exchange} ...")
 
     contract = Future(symbol=symbol, exchange=exchange)
     details = await ib.reqContractDetailsAsync(contract)

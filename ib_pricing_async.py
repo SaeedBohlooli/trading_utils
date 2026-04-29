@@ -191,16 +191,16 @@ async def subscribe_symbol(ib, symbol, secType= None, exchange= None, currency=N
 
     details = await ib.qualifyContractsAsync(contract)
 
-    logger.info(f"[SUBSCRIBE], qualified contract: {symbol} details: {details}")
+    logger.info(f"[subscribe_symbol], qualified contract: {symbol} details: {details}")
 
     qualified = details[0]  # this is already a Contract (Index/Stock/etc.)
     if qualified is None:
-        logger.warning(f"@@@@@ subscribe_symbol: qualified contract is None for symbol: {symbol}")
+        logger.warning(f"[subscribe_symbol] @@@@@ : qualified contract is None for symbol: {symbol}")
         return None
 
     con_id = qualified.conId
 
-    logger.info(f"[SUBSCRIBE] {symbol} qualified with conId= {con_id}")
+    logger.info(f"[subscribe_symbol] {symbol} qualified with conId= {con_id}")
 
     ticker = ib.reqMktData(contract, "", False, False)
     ticker.updateEvent += on_ticker_update
@@ -229,11 +229,11 @@ async def get_or_subscribe_symbol_price(ib,
         con_id = global_state.symbol_to_conid.get(symbol)
 
         if con_id is None:
-            logger.info(f"@@ get_or_subscribe_symbol_price: symbol {symbol} not subscribed yet, subscribing now ... attempt: {attempt}")
+            logger.info(f"[get_or_subscribe_symbol_price] symbol {symbol} not subscribed yet, subscribing now ... attempt: {attempt}")
             await subscribe_symbol(ib, symbol, contract_month=contract_month)
             # return None
         if attempt > 3:
-            logger.error(f"@@ get_or_subscribe_symbol_price: Failed to get conId for symbol: {symbol} after {attempt} attempts.")
+            logger.error(f"[get_or_subscribe_symbol_price] @@ Failed to get conId for symbol: {symbol} after {attempt} attempts.")
             await asyncio.sleep(poll_interval)
 
 
@@ -259,19 +259,19 @@ async def get_or_subscribe_symbol_price(ib,
         # No price yet
         # -----------------------------
         if not wait_for_price:
-            logger.warning(f"@ get_latest_price: No quote yet for {symbol}")
+            logger.warning(f"[get_or_subscribe_symbol_price] @ No quote yet for {symbol}")
             return None
 
         if time.time() - start > timeout_sec:
             logger.warning(
-                f"@ Timeout waiting for price for {symbol} after {timeout_sec}s"
+                f"[get_or_subscribe_symbol_price] @ Timeout waiting for price for {symbol} after {timeout_sec}s"
             )
             return None
 
         if not warned:
-            logger.info(f"@ Waiting for first price for {symbol}")
+            logger.info(f"[get_or_subscribe_symbol_price] @ Waiting for first price for {symbol}")
             warned = True
-        logger.info(f"@ get_latest_price: No valid price yet for {symbol} ... we still waiting ...")
+        logger.info(f"[get_or_subscribe_symbol_price] @ No valid price yet for {symbol} ... we still waiting ...")
         await asyncio.sleep(poll_interval)
 
 def valid(x):
@@ -347,7 +347,7 @@ async def subscribe_contracts_to_market_data(ib, contracts):
 async def get_or_subscribe_option_price(ib, symbol=None, expiry=None,strike=None, right=None):
     contract = await ib_contract.get_option_contract_cached(ib, symbol, expiry, strike, right)
     if contract is None:
-        logger.warning(f"[get_or_subscribe_option_price] @@@ get_or_subscribe_symbol_price: contract is None for symbol: {symbol}, expiry: {expiry}, strike: {strike}, right: {right}")
+        logger.warning(f"[get_or_subscribe_option_price] @@@ contract is None for symbol: {symbol}, expiry: {expiry}, strike: {strike}, right: {right}")
         return np.nan, np.nan, np.nan
     await subscribe_contracts_to_market_data(ib, [contract])
 

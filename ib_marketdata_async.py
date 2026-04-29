@@ -61,7 +61,7 @@ async def get_stock_historical_data(
     if use_cache:
         contract = await ib_contract.get_cached_contract(ib, symbol, contract_month=contract_month)
     else:
-        logger.info(f"get_stock_historical_data: Caching disabled.")
+        logger.info(f"[get_stock_historical_data] : Caching disabled.")
         if symbol == "MNQ":
             contract = Future('MNQ', contract_month, 'CME')
         elif symbol == "SPX":
@@ -70,7 +70,7 @@ async def get_stock_historical_data(
             contract = Stock(symbol, "SMART", "USD")
 
     # Prepare contract
-    logger.info(f"get_stock_historical_data, Fetching historical data for {symbol}, timeframe: {time_frame}, duration: {duration}, end_date: {end_date}, contract: {contract}")
+    logger.info(f"[get_stock_historical_data] , Fetching historical data for {symbol}, timeframe: {time_frame}, duration: {duration}, end_date: {end_date}, contract: {contract}")
     # await ib.qualifyContractsAsync(contract)
 
     # Set IBKR endDateTime
@@ -96,28 +96,28 @@ async def get_stock_historical_data(
             break  # success
 
         except Exception as e:
-            logger.error(f"@@@@ Historical request failed (attempt {attempt}/{max_retries}): {e}")
+            logger.error(f"[get_stock_historical_data] @@@@ Historical request failed (attempt {attempt}/{max_retries}): {e}")
 
             if attempt == max_retries:
-                logger.error("[ERROR] Max retries reached. Reraising.")
+                logger.error("[get_stock_historical_data] Max retries reached. Reraising.")
                 raise
 
             await asyncio.sleep(retry_delay)
             retry_delay *= 1.5  # exponential backoff
 
     # Convert results → DataFrame
-    logger.info(f"Fetched {len(bars)} bars for {symbol}")
+    logger.info(f"[get_stock_historical_data] Fetched {len(bars)} bars for {symbol}")
     df = util.df(bars)
     if df is None:
-        logger.warning(f"@@@@@@ get_stock_historical_data: df is None for symbol: {symbol}")
+        logger.warning(f"[get_stock_historical_data] @@@@@@ get_stock_historical_data: df is None for symbol: {symbol}")
         return pd.DataFrame()
     if df.empty:
         return df
 
     df["date"] = pd.to_datetime(df["date"])
-    logger.info(f"get_stock_historical_data, {symbol}, {time_frame}, df['date'].min(): {df['date'].min()}, df['date'].max(): {df['date'].max()}")
+    logger.info(f"[get_stock_historical_data] , {symbol}, {time_frame}, df['date'].min(): {df['date'].min()}, df['date'].max(): {df['date'].max()}")
     if print_last_few_rows > 0:
-        logger.info(f"get_stock_historical_data, {symbol}, {time_frame}, df:\n {df[-3:].to_markdown()}")
+        logger.info(f"[get_stock_historical_data] , {symbol}, {time_frame}, df:\n {df[-3:].to_markdown()}")
 
     # df["date"] = pd.to_datetime(df["date"], utc=True).dt.tz_convert("America/New_York")
 

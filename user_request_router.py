@@ -18,19 +18,18 @@ def remove_requests_from_user_requests(application_state, requests_to_remove):
     logger.info(f"Remaining requests after removal: {application_state['user_requests']}")
 
 def archive_user_requests(application_state, requests_to_archive):
-    logger.info(f"archive_user_requests called with requests_to_archive: {requests_to_archive}")
+    logger.info(f"[archive_user_requests] requests_to_archive: {requests_to_archive}")
     remaining_requests = [
         req for req in application_state.get('user_requests', [])
         if req not in requests_to_archive
     ]
     application_state['user_requests'] = remaining_requests
     application_state.setdefault('archived_user_requests', []).extend(requests_to_archive)
-    logger.info(f"Remaining requests after removal: {application_state['user_requests']}")
+    logger.info(f"[archive_user_requests] Remaining requests after removal: {application_state['user_requests']}")
 
 
 async def process_user_requests(ib, app_config, application_state):
-    logger.info(f"Processing user requests...")
-    logger.info(f"Processing user request here: {application_state.get('user_requests')}")
+    logger.info(f"[process_user_requests]  {application_state.get('user_requests')}")
     requests_needs_to_delete = []
     for user_request in application_state.get('user_requests', []):
         logger.info(f"Processing user request: {user_request}")
