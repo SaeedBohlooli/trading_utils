@@ -275,7 +275,7 @@ async def convert_open_orders_to_dict(ib: IB):
 
         # # Keep only active orders
         if status  in ("Cancelled", 'Filled'):
-            logger.info(f"[convert_open_orders_to_dict] Skipping orderId={t.order.orderId} with status={status}")
+            # logger.info(f"[convert_open_orders_to_dict] Skipping orderId={t.order.orderId} with status={status}")
             continue
 
         o = t.order
