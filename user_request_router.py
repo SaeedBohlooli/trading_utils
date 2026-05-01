@@ -32,11 +32,11 @@ async def process_user_requests(ib, app_config, application_state):
     logger.info(f"[process_user_requests]  {application_state.get('user_requests')}")
     requests_needs_to_delete = []
     for user_request in application_state.get('user_requests', []):
-        logger.info(f"Processing user request: {user_request}")
+        logger.info(f"[process_user_requests] Processing user request,  {user_request}")
         if 'ENGINE_PROCESSED' in user_request.get('status', '') :
             requests_needs_to_delete.append(user_request)
             continue  # Skip already processed requests
-        logger.info(f"Processing user request: {user_request}")
+        logger.info(f"[process_user_requests] Processing user request: {user_request}")
         if user_request.get('request_type', '').lower() == 'close_position':
             symbol = user_request.get('symbol')
             if symbol:
