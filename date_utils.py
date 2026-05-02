@@ -1,18 +1,66 @@
 import pytz
 import datetime
+import time
 import pandas as pd
 import logging
 import pandas_market_calendars as mcal
-from typing import List
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Simulated NY / wall clock for replay (backtests). When unset, helpers below
+# fall back to the same behavior used by the live engine.
+# ---------------------------------------------------------------------------
+
+_replay_datetime_et_naive: Optional[datetime.datetime] = None
+_replay_monotonic_time: Optional[float] = None
+
+
+def set_replay_wall_clock_et_naive(dt: datetime.datetime) -> None:
+    """Interpret dt as Eastern wall time (tz-naive). Drives hhmm/date helpers."""
+    global _replay_datetime_et_naive
+    _replay_datetime_et_naive = dt.replace(microsecond=0)
+
+
+def set_replay_monotonic_time(seconds: Optional[float]) -> None:
+    """Drives RuntimeManager.is_due interval comparisons during replay."""
+    global _replay_monotonic_time
+    _replay_monotonic_time = seconds
+
+
+def clear_replay_wall_clock_et_naive() -> None:
+    global _replay_datetime_et_naive
+    _replay_datetime_et_naive = None
+
+
+def clear_replay_monotonic_time() -> None:
+    global _replay_monotonic_time
+    _replay_monotonic_time = None
+
+
+def clear_replay_context() -> None:
+    clear_replay_wall_clock_et_naive()
+    clear_replay_monotonic_time()
+
+
+def effective_wall_clock_et_naive() -> datetime.datetime:
+    if _replay_datetime_et_naive is not None:
+        return _replay_datetime_et_naive
+    return datetime.datetime.now()
+
+
+def effective_monotonic_time() -> float:
+    if _replay_monotonic_time is not None:
+        return float(_replay_monotonic_time)
+    return time.time()
 
 def time_now():
     now_date_time = datetime.datetime.now()
     return now_date_time.strftime("%Y-%m-%d %H:%M:%S")
 
 def get_current_hhmm_ny():
-    now = datetime.datetime.now() # TODO put local NY time
+    now = effective_wall_clock_et_naive()
     current_hhmm_ny = int(now.strftime("%H%M"))
     return current_hhmm_ny
 
@@ -25,11 +73,11 @@ def time_now_yyyy_mm_dd_hh_mm_ss():
     return now_date_time.strftime("%Y-%m-%d %H:%M:%S")
 
 def get_yyyymmdd():
-    now_date_time = datetime.datetime.now()
+    now_date_time = effective_wall_clock_et_naive()
     return now_date_time.strftime("%Y%m%d")
 
 def get_yyyy_mm_dd():
-    now_date_time = datetime.datetime.now()
+    now_date_time = effective_wall_clock_et_naive()
     return now_date_time.strftime("%Y-%m-%d")
 
 

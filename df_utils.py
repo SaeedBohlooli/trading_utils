@@ -35,11 +35,13 @@ def cut_df_strating_hour_x_on_last_day(df, cutoff_time="13:00"):
     last_day = df['date'].dt.normalize().max()
 
     # Create masks
-    mask_time = df['date'].dt.time >= pd.to_datetime(cutoff_time).time()
+    cutoff_t = pd.to_datetime(cutoff_time).time()
+    mask_time = df['date'].dt.time >= cutoff_t
     mask_day = df['date'].dt.normalize() == last_day
 
-    # Keep everything aftere that cutoff on the last day, and all prior days
-    cut_df = df[(mask_day & mask_time)]
+    # Keep all prior calendar days in full, and on the last day only rows from cutoff onward
+    prior_days = df["date"].dt.normalize() < last_day
+    cut_df = df[prior_days | (mask_day & mask_time)]
     return cut_df
 
 
