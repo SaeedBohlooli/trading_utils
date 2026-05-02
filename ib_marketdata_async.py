@@ -117,7 +117,7 @@ async def get_stock_historical_data(
     df["date"] = pd.to_datetime(df["date"])
     logger.info(f"[get_stock_historical_data] , {symbol}, {time_frame}, df['date'].min(): {df['date'].min()}, df['date'].max(): {df['date'].max()}")
     if print_last_few_rows > 0:
-        logger.info(f"[get_stock_historical_data] , {symbol}, {time_frame}, df:\n {df[-3:].to_markdown()}")
+        logger.info(f"[get_stock_historical_data]  {symbol}, {time_frame}, df:\n {df[-3:].to_markdown()}")
 
     # df["date"] = pd.to_datetime(df["date"], utc=True).dt.tz_convert("America/New_York")
 
