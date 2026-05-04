@@ -63,7 +63,7 @@ DEFAULT_CONFIG = {
 # -----------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "..", "configs", "watchdog_config.yaml")
+CONFIG_PATH = os.path.join(BASE_DIR, "..", "configs", "config-watchdog.yaml")
 
 
 def deep_merge(defaults: dict, overrides: dict) -> dict:

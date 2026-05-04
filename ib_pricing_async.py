@@ -317,13 +317,13 @@ async def subscribe_contracts_to_market_data(ib, contracts):
 
     for c in contracts:
         # request streaming market data
-        logger.info(f"contract to subscribe: {c}")
+        logger.info(f"[subscribe_contracts_to_market_data] Contract to subscribe: {c}")
         if c is None:
-            logger.error(f"@@@@@@ subscribe_to_contracts: Encountered None contract — skipping contract: {c}")
+            logger.error(f"[subscribe_contracts_to_market_data] @@@@@@ subscribe_to_contracts: Encountered None contract — skipping contract: {c}")
             continue
 
         if c.conId in global_state.conid_to_symbol_subscribed_for_quotes.keys():
-            logger.debug(f"@ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
+            logger.debug(f"[subscribe_contracts_to_market_data] @ subscribe_to_contracts: Already subscribed to conId={c.conId}, skipping...")
             continue
         ticker = ib.reqMktData(
             c,
@@ -342,10 +342,10 @@ async def subscribe_contracts_to_market_data(ib, contracts):
         global_state.conid_to_symbol[con_id] = symbol
         global_state.conid_to_symbol_subscribed_for_quotes[con_id] = symbol
 
-        logger.info(f"[ib_pricing_async] SUBSCRIBED: {symbol} (conId={con_id})")
+        logger.info(f"[subscribe_contracts_to_market_data] SUBSCRIBED: {symbol} (conId={con_id})")
         global_state.subscribed_symbols_count += 1
 
-    logger.info(f"[ib_pricing_async] Subscribed to {len(contracts)} contracts.")
+    logger.info(f"[subscribe_contracts_to_market_data] Subscribed to {len(contracts)} contracts.")
     return
 
 async def get_or_subscribe_option_price(ib, symbol=None, expiry=None,strike=None, right=None):
