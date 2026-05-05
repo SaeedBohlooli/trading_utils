@@ -477,7 +477,7 @@ async def submit_linear_order_with_sl_tp(ib, side, contract, stop_loss_price, ta
     side = 'BUY' if side.lower() in ['buy', 'long'] else 'SELL' # unify ..
     revers = 'SELL' if side == 'BUY' else 'BUY'
 
-    logger.warning(f"side: {side}, revers: {revers}, tp_price: {tp_price}, sl_price:{sl_price}, contract: {contract} ")
+    logger.warning(f"[submit_linear_order_with_sl_tp] side: {side}, revers: {revers}, tp_price: {tp_price}, sl_price:{sl_price}, contract: {contract} ")
 
     parent = MarketOrder(side, quantity, orderId=parent_order_id)
     parent.outsideRth = True
@@ -496,7 +496,7 @@ async def submit_linear_order_with_sl_tp(ib, side, contract, stop_loss_price, ta
     tp.outsideRth = True
     tp_order_ref = f'{order_ref}-TP'
     tp.orderRef = tp_order_ref
-    logger.warning(f"tp: {tp}")
+    logger.warning(f"[submit_linear_order_with_sl_tp] tp: {tp}")
 
     # Stop loss (stop sell)
     sl_order_id = ib.client.getReqId()

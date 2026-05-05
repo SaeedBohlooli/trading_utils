@@ -68,23 +68,23 @@ def on_portfolio_update(item):
 
 def on_fill(trade, fill):
 
-    logger.warning(f'in on_fill, trade: {trade}')
-    logger.warning(f'in on_fill, fill: {fill}')
-    logger.warning(f'in on_fill, fill.execution.order_id: {fill.execution.orderId}, fill.contract.symbol: {fill.contract.symbol}')
+    logger.warning(f'[on_fill ]in on_fill, trade: {trade}')
+    logger.warning(f'[on_fill] in on_fill, fill: {fill}')
+    logger.warning(f'[on_fill] in on_fill, fill.execution.order_id: {fill.execution.orderId}, fill.contract.symbol: {fill.contract.symbol}')
 
     flatten_dic = flatten(fill)
-    logger.info(f":flatten :{flatten_dic}")
-    logger.info(f":flatten - print :\n{pprint.pformat(flatten_dic)}")
+    logger.info(f"[on_fill] flatten :{flatten_dic}")
+    logger.info(f"[on_fill] flatten - print :\n{pprint.pformat(flatten_dic)}")
     global_state.ib_on_fill_fill_df = pd.concat([global_state.ib_on_fill_fill_df, pd.DataFrame([flatten_dic])], ignore_index=True)
 
     flatten_dic = flatten(trade)
-    logger.info(f":flatten :{flatten_dic}")
+    logger.info(f"[on_fill] flatten :{flatten_dic}")
     global_state.ib_on_fill_trade_df = pd.concat([global_state.ib_on_fill_trade_df, pd.DataFrame([flatten_dic])], ignore_index=True)
 
     return
 
 def on_error(reqId, errorCode, errorMsg, contract):
-    logger.warning(f"@@ IB error {errorCode} (reqId={reqId}): {errorMsg}, contract: {contract}")
+    logger.warning(f"[on_error] @@ IB error {errorCode} (reqId={reqId}): {errorMsg}, contract: {contract}")
     data = {
         'date': str(date_utils.time_now()),
         'errorCode': f'{errorCode}',

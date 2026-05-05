@@ -11,38 +11,37 @@ from trading_utils import ib_contract
 import numpy as np
 import math
 
-async def XXX_get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
-    #
-
-    for attempt in range(1, max_retries + 1):
-        # spx = Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD')
-        spx = Index(symbol='SPX', exchange='CBOE', currency='USD')
-        # spx = Contract()
-        # spx.conId = 416904
-        # spx.secType = "IND"
-        # spx.symbol = "SPX"
-        # spx.exchange = "CBOE"
-        # spx.currency = "USD"
-
-        details = await ib.qualifyContractsAsync(spx)
-        logger.info(f"get_current_price_SPX, symbol: {symbol}, details: {details}")
-        # logger.info(details[0].contract.conId)
-
-        ticker = ib.reqMktData(spx, '', False, False)
-        await asyncio.sleep(1)
-        logger.info(f"get_current_price_SPX, symbol: {symbol}, last: {ticker.last},  bid:, {ticker.bid},  ask:{ticker.ask}")
-
-        price = ticker.last
-        if price is not None and not (pd.isna(price) or math.isnan(price)):
-            if attempt > 1:
-                logger.warning(f"@@ get_current_price_SPX, succefull try after attempt: {attempt}, symbol: {symbol}")
-            return price
-        else:
-            logger.warning(
-                f"@@@ get_current_price_SPX, {symbol}, price is nan, try again ... attempt: {attempt}")
-            await asyncio.sleep(retry_delay)
-
-    return price
+# async def XXX_get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
+#     #
+#
+#     for attempt in range(1, max_retries + 1):
+#         # spx = Index(conId=416904, symbol='SPX', exchange='CBOE', currency='USD')
+#         spx = Index(symbol='SPX', exchange='CBOE', currency='USD')
+#         # spx = Contract()
+#         # spx.conId = 416904
+#         # spx.secType = "IND"
+#         # spx.symbol = "SPX"
+#         # spx.exchange = "CBOE"
+#         # spx.currency = "USD"
+#
+#         details = await ib.qualifyContractsAsync(spx)
+#         logger.info(f"get_current_price_SPX, symbol: {symbol}, details: {details}")
+#         # logger.info(details[0].contract.conId)
+#
+#         ticker = ib.reqMktData(spx, '', False, False)
+#         await asyncio.sleep(1)
+#         logger.info(f"get_current_price_SPX, symbol: {symbol}, last: {ticker.last},  bid:, {ticker.bid},  ask:{ticker.ask}")
+#
+#         price = ticker.last
+#         if price is not None and not (pd.isna(price) or math.isnan(price)):
+#             if attempt > 1:
+#                 logger.warning(f"@@ get_current_price_SPX, succefull try after attempt: {attempt}, symbol: {symbol}")
+#             return price
+#         else:
+#             logger.warning(f"@@@ get_current_price_SPX, {symbol}, price is nan, try again ... attempt: {attempt}")
+#             await asyncio.sleep(retry_delay)
+#
+#     return price
 
 
 async def qualify_contracts_v_1(ib, contracts):
@@ -391,14 +390,14 @@ async def unsubscribe_contracts_from_market_data(ib, contracts):
     """
     for c in contracts:
         if c is None:
-            logger.error("@@@@@@ unsubscribe_contracts_from_market_data: Encountered None contract — skipping")
+            logger.error("[unsubscribe_contracts_from_market_data] @@@@@@ Encountered None contract — skipping")
             continue
 
         con_id = c.conId
         symbol = global_state.conid_to_symbol.get(con_id)
 
         if con_id not in global_state.conid_to_symbol_subscribed_for_quotes:
-            logger.warning(f"@ unsubscribe_contracts_from_market_data: Not subscribed to conId={con_id}, skipping...")
+            logger.warning(f"[unsubscribe_contracts_from_market_data] @ Not subscribed to conId={con_id}, skipping...")
             continue
 
         try:
@@ -416,7 +415,7 @@ async def unsubscribe_contracts_from_market_data(ib, contracts):
 
         except Exception as e:
             logger.exception(
-                f"@@@@@@ Failed to unsubscribe conId={con_id}, symbol={symbol}: {e}"
+                f"[unsubscribe_contracts_from_market_data] @@@@@@ Failed to unsubscribe conId={con_id}, symbol={symbol}: {e}"
             )
 
     logger.info(f"[unsubscribe_contracts_from_market_data] Unsubscribe completed.")
@@ -435,7 +434,7 @@ def find_and_print_invalid_quotes(df):
     invalid_rows = df.loc[invalid_mask]
 
     if not invalid_rows.empty:
-        logger.warning(f"@ find_and_print_invalid_quotes, Invalid rows (bid or ask is NaN or -1): \n{invalid_rows.to_markdown()}")
+        logger.warning(f"[find_and_print_invalid_quotes] @ Invalid rows (bid or ask is NaN or -1): \n{invalid_rows.to_markdown()}")
 
     return invalid_rows
 
