@@ -213,7 +213,7 @@ def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=N
     if dest_file_path is None:
         dest_file_path = f"{src_file_path}-txt.csv"
 
-    logger.info(f"Started write_file_in_tabulate, src_file_path: {src_file_path}, dest_file_path: {dest_file_path}, number_of_rows: {number_of_rows}")
+    logger.info(f"[write_file_in_tabulate] started src_file_path: {src_file_path}, dest_file_path: {dest_file_path}, number_of_rows: {number_of_rows}")
 
     try:
         df = pd.read_csv(src_file_path)
@@ -222,7 +222,7 @@ def write_file_in_tabulate(src_file_path, dest_file_path= None, number_of_rows=N
         empty_table = tabulate(pd.DataFrame(), headers="keys", tablefmt="psql")
         with open(dest_file_path, "w", encoding="utf-8") as f:
             f.write(empty_table + "\n")
-        logger.info(f"Finished write_file_in_tabulate (empty csv), dest_file_path: {dest_file_path}")
+        logger.info(f"[write_file_in_tabulate] finished (empty csv), dest_file_path: {dest_file_path}")
         return
 
     if len(df) > 0:
