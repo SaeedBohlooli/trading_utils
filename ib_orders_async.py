@@ -67,7 +67,7 @@ def submit_option_order_multi_leg(ib, legs, total_quantity, root_symbol, order_r
         comboLegs=legs
     )
     order = MarketOrder('BUY', totalQuantity=total_quantity)
-    logger.info(f"TODO {order}")
+    logger.info(f"[submit_option_order_multi_leg] order: {order}")
 
     order.orderRef = order_ref
 
@@ -151,10 +151,10 @@ async def submit_option_order_prequalified_contract(ib, q_contract=None, side=No
     side_s = str(side or "long").strip().lower()
     action = "BUY" if side_s in ("buy", "long") else "SELL"
 
-    logger.info(f"submit_option_order_prequalified_contract, Qualified: {q_contract}")
+    logger.info(f"[submit_option_order_prequalified_contract] Qualified: {q_contract}")
 
     order = MarketOrder(action, totalQuantity=total_quantity)
-    logger.info(f"TODO {order}")
+    logger.info(f"[submit_option_order_prequalified_contract] order:  {order}")
     if order_ref:
         order.orderRef = order_ref
 
@@ -164,8 +164,8 @@ async def submit_option_order_prequalified_contract(ib, q_contract=None, side=No
     trade = ib.placeOrder(q_contract, order)
     trade.fillEvent += ib_posttrade.on_fill
 
-    logger.info(f"[submit_option_order_prequalified_contract], Order sent ....")
-    logger.info(f"[submit_option_order_prequalified_contract], trade: {trade}")
+    logger.info(f"[submit_option_order_prequalified_contract] Order sent ....")
+    logger.info(f"[submit_option_order_prequalified_contract] trade: {trade}")
 
     return trade
 
@@ -203,14 +203,14 @@ async def submit_linear_order(ib: IB, symbol: str, quantity: int, action: str = 
     :param action: "BUY" or "SELL"
     """
     action = 'BUY' if action.lower() in ["buy", "long"] else 'SELL'
-    logger.info(f"[submit_linear_order], place_order, Preparing to place {action} order for {quantity} shares of {symbol}")
+    logger.info(f"[submit_linear_order] place_order, Preparing to place {action} order for {quantity} shares of {symbol}")
     # 1) Define the contract
     contract = Stock(symbol, "SMART", "USD")
 
     # 2) Qualify the contract
     [qualified_contract] = await ib.qualifyContractsAsync(contract)
 
-    logger.info(f"[submit_linear_order], place_order, Qualified contract: {qualified_contract}")
+    logger.info(f"[submit_linear_order] place_order, Qualified contract: {qualified_contract}")
 
     # 3) Create a Market Order
     order = MarketOrder(action, quantity)
@@ -222,18 +222,18 @@ async def submit_linear_order(ib: IB, symbol: str, quantity: int, action: str = 
         order.algoStrategy = algo_strategy
         if adaptive_priority:
             order.algoParams = [TagValue("adaptivePriority", str(adaptive_priority))]
-        logger.info(f"[submit_linear_order], Using algo strategy: {algo_strategy}, adaptive_priority: {adaptive_priority}")
+        logger.info(f"[submit_linear_order] Using algo strategy: {algo_strategy}, adaptive_priority: {adaptive_priority}")
 
     # 4) Place the order
     trade = ib.placeOrder(qualified_contract, order)
     trade.fillEvent += ib_posttrade.on_fill
-    logger.info(f"[submit_linear_order], Order sent ....order_ref: {order_ref}")
+    logger.info(f"[submit_linear_order] Order sent ....order_ref: {order_ref}")
     # await trade.completion()  # Wait until the order is completed - need to be verified.
-    logger.info(f"[submit_linear_order], Order sent after await ....")
+    logger.info(f"[submit_linear_order] Order sent after await ....")
 
     logger.warning(f"[submit_linear_order], trade: {trade}")
 
-    logger.info(f"[submit_linear_order], Submitted {action} {quantity} {symbol}, orderId={trade.order.orderId}, order_ref: {order_ref}")
+    logger.info(f"[submit_linear_order] Submitted {action} {quantity} {symbol}, orderId={trade.order.orderId}, order_ref: {order_ref}")
 
     # OPTIONAL: wait until it is filled or cancelled
     if wait_untill_filled:
@@ -245,7 +245,7 @@ async def submit_linear_order(ib: IB, symbol: str, quantity: int, action: str = 
                 f"remaining={trade.orderStatus.remaining}"
             )
 
-    logger.info(f"[submit_linear_order], Final status: {trade.orderStatus.status}, order_ref: {order_ref}")
+    logger.info(f"[submit_linear_order] Final status: {trade.orderStatus.status}, order_ref: {order_ref}")
     return trade
 
 

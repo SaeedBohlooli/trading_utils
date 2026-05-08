@@ -70,7 +70,7 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     if res is not None:
         return cache[key]
 
-    logger.info(f"[get_option_contract_cached], Cache miss for key: {key}, creating and qualifying new contract.")
+    logger.info(f"[get_option_contract_cached] Cache miss for key: {key}, creating and qualifying new contract.")
 
     if trading_class is None:
         trading_class = "SPXW" if symbol == "SPX" else symbol
@@ -92,7 +92,7 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
 
     qc = qualified[0]
     if qc is None:
-        logger.info(f"[get_option_contract_cached], @@@ Could not qualify contract for symbol={symbol}, key: {key}")
+        logger.info(f"[get_option_contract_cached] @@@ Could not qualify contract for symbol={symbol}, key: {key}")
     cache[key] = qc
 
     return qc
@@ -108,7 +108,7 @@ async def get_option_contract_by_conid(ib, con_id):
         logger.error(f" @@@ [get_option_contract_by_conid], Could not qualify contract for conid={con_id}")
         return None
     qc = qualified[0]
-    logger.info(f"[get_option_contract_by_conid], Qualified contract for conid= {con_id}, qc: {qc}" )
+    logger.info(f"[get_option_contract_by_conid] Qualified contract for conid= {con_id}, qc: {qc}" )
     qc = qc.contract   # the object is ContractDetails, we take contract field
     global_state.conid_to_contract_cache[con_id] = qc
 
@@ -127,7 +127,7 @@ async def get_nearest_future_contract_month(ib, symbol="MNQ", exchange='CME'):
         # logger.info(f"[get_nearest_future_contract_month] contractMonth:{c.lastTradeDateOrContractMonth}  , type: {type(c.lastTradeDateOrContractMonth)}")
 
     contract_months = sorted(contract_months)
-    logger.info(f"[get_nearest_future_contract_month], sorted, contract_months: {contract_months}")
+    logger.info(f"[get_nearest_future_contract_month] sorted, contract_months: {contract_months}")
     if len(contract_months) > 1:
         return contract_months[0][:6]
     else:

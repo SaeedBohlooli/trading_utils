@@ -10,7 +10,7 @@ def print_map_pretty(map, msg = ''):
 
 
 def polish_map_to_show_in_hover(data):
-    logger.info(f"[polish_map_to_show_in_hover] @ {type(data)},  data: {data}, ")
+    logger.debug(f"[polish_map_to_show_in_hover] {type(data)},  data: {data}, ")
     try:
         # return json.dumps(data).replace(',', ',<br>')
         return json.dumps(data, default=str).replace(',', ',<br>') # use str for .Object of type int64 is not JSON serializable error

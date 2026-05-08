@@ -182,7 +182,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
     - If long → send SELL
     - If short → send BUY
     """
-    logger.info(f"[close_position_by_con_id], Closing position for symbol: {symbol}, con_id: {con_id}, side: {side}, qty_to_close: {qty_to_close}")
+    logger.info(f"[close_position_by_con_id] Closing position for symbol: {symbol}, con_id: {con_id}, side: {side}, qty_to_close: {qty_to_close}")
     if con_id is None:
         return False
     # --- Step 1: get open positions
@@ -194,7 +194,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
 
         position_qty = pos.position
         if position_qty == 0:
-            logger.info(f"[close_position_by_con_id], No open position to close for con_id: {con_id}")
+            logger.info(f"[close_position_by_con_id] No open position to close for con_id: {con_id}")
             return False
 
         # Determine closing side
@@ -206,7 +206,7 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
             qty_to_close = abs(position_qty)
 
 
-        logger.info(f"[close_position_by_con_id], Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty}) , order_ref: {order_ref}")
+        logger.info(f"[close_position_by_con_id] Closing {symbol}: {action} qty_to_close: {qty_to_close} (position_qty={position_qty}) , order_ref: {order_ref}")
 
         # Create a market order
         order = Order(
@@ -228,12 +228,12 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
         # Place order
         trade = ib.placeOrder(pos.contract, order)
         trade.fillEvent += ib_posttrade.on_fill
-        logger.info(f"[close_position_by_con_id], Order sent ....")
-        logger.info(f"[close_position_by_con_id], trade: {trade}")
+        logger.info(f"[close_position_by_con_id] Order sent ....")
+        logger.info(f"[close_position_by_con_id] trade: {trade}")
 
         return True
 
-    logger.info(f"[close_position_by_con_id],@@@@ No position found for con_id= {con_id} , order_ref: {order_ref}")
+    logger.info(f"[close_position_by_con_id]@@@@ No position found for con_id= {con_id} , order_ref: {order_ref}")
     return False
 
 async def close_all_open_position_async(ib, order_ref=None): # TODO use above method ...

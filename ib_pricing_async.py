@@ -190,7 +190,7 @@ async def subscribe_symbol_for_market_price(ib, symbol, secType= None, exchange=
 
     details = await ib.qualifyContractsAsync(contract)
 
-    logger.info(f"[subscribe_symbol_for_market_price], qualified contract: {symbol} details: {details}")
+    logger.info(f"[subscribe_symbol_for_market_price] qualified contract: {symbol} details: {details}")
 
     qualified = details[0]  # this is already a Contract (Index/Stock/etc.)
     if qualified is None:
