@@ -29,6 +29,7 @@ def load_csv_file(file_path, expected_columns=[]):
 
 def cut_df_strating_hour_x_on_last_day(df, cutoff_time="13:00"):
     df = df.copy()
+    logger.info(f"[cut_df_strating_hour_x_on_last_day] {df[-3:].to_markdown()}")
     df['date'] = pd.to_datetime(df['date'])
 
     # Find the last trading day in the DataFrame
