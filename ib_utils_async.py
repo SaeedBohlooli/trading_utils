@@ -14,23 +14,23 @@ async def create_ib_async(ip="127.0.0.1", port=7497, client_id=1, retry_delay=3,
     attempt = 0
     while True:
         try:
-            logger.info(f"Trying IBKR connection: {ip}:{port}, clientId={client_id}, max_attempts: {max_attempts}, attempt: {attempt}...")
+            logger.info(f"[create_ib_async] Trying IBKR connection: {ip}:{port}, clientId={client_id}, max_attempts: {max_attempts}, attempt: {attempt}...")
 
             await ib.connectAsync(ip, port, clientId=client_id, timeout=5)
 
             if ib.isConnected():
-                logger.info(f"Connected to IBKR: {ip}:{port} (clientId={client_id}) ,attempt: {attempt}.")
+                logger.info(f"[create_ib_async] Connected to IBKR: {ip}:{port} (clientId={client_id}) ,attempt: {attempt}.")
                 return ib  # return the connected instance
 
             else:
-                logger.warning(f"IBKR connect returned but not connected — retrying. ,attempt: {attempt}. max_attempts: {max_attempts}")
+                logger.warning(f"[create_ib_async] IBKR connect returned but not connected — retrying. ,attempt: {attempt}. max_attempts: {max_attempts}")
 
         except Exception as e:
-            logger.error(f"@@@ IBKR connect failed: {e}. Retrying in {retry_delay} seconds. attempt: {attempt}, max_attempts: {max_attempts}")
+            logger.error(f"[create_ib_async] @@@ IBKR connect failed: {e}. Retrying in {retry_delay} seconds. attempt: {attempt}, max_attempts: {max_attempts}")
             logger.error(traceback.format_exc())
 
         if max_attempts is not None and attempt >= max_attempts:
-            logger.error("[IB] Max connection attempts reached. Giving up.")
+            logger.error("[create_ib_async] Max connection attempts reached. Giving up.")
             return None
 
         # Wait before retrying

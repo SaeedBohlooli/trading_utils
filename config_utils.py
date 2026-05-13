@@ -29,7 +29,8 @@ def load_config(file_path ='config.yaml') -> dict:
             if local_config != None or local_config != {}:
                 config.update(local_config)
 
-    logger.info(f"[load_config] config: {config}")
+    logger.debug(f"[load_config] config: {config}")
+    logger.info(f"[load_config] config is loaded, {file_path}")
 
     return config
 
