@@ -41,6 +41,7 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
     if qualified_contract.conId:
         global_state.symbol_to_conid[symbol] = qualified_contract.conId
         global_state.conid_to_symbol[qualified_contract.conId] = symbol
+        global_state.conid_to_contract_cache[qualified_contract.conId] = qualified_contract
 
     logger.info(f"[get_cached_contract] Cached contract for {symbol}, conId={qualified_contract.conId}"
     )
