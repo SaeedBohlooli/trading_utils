@@ -24,7 +24,6 @@ conid_to_symbol = {}        # Reverse lookup
 contract_cache = {}     # symbol -> fully qualified contract object
 option_contract_cache = {}  # symbol+expiry+strike+right -> fully qualified contract object"
 conid_to_contract_cache = {} # conid -> fully qualified contract object
-subscribed_symbols_count = 0
 # Optional: define a helper for safe updates
 def update_quote(con_id, data):
     quote_cache[con_id] = data

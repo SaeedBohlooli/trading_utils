@@ -208,7 +208,6 @@ async def subscribe_symbol_for_market_price(ib, symbol, secType= None, exchange=
     global_state.symbol_to_conid[symbol] = con_id
     global_state.conid_to_symbol[con_id] = symbol
     global_state.conid_to_symbol_subscribed_for_quotes[con_id] = symbol
-    global_state.subscribed_symbols_count += 1
 
     return ticker
 
@@ -342,7 +341,6 @@ async def subscribe_contracts_to_market_data(ib, contracts):
         global_state.conid_to_symbol_subscribed_for_quotes[con_id] = symbol
 
         logger.info(f"[subscribe_contracts_to_market_data] SUBSCRIBED: {symbol} (conId={con_id})")
-        global_state.subscribed_symbols_count += 1
 
     logger.info(f"[subscribe_contracts_to_market_data] Subscribed to {len(contracts)} contracts.")
     return
@@ -411,7 +409,6 @@ async def unsubscribe_contracts_from_market_data(ib, contracts):
             global_state.quote_cache.pop(con_id, None)
             global_state.conid_to_symbol_subscribed_for_quotes.pop(con_id, None)  # This keeps which conid are subscribed ...
 
-            global_state.subscribed_symbols_count -= 1
 
         except Exception as e:
             logger.exception(
