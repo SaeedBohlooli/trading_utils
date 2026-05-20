@@ -100,7 +100,7 @@ def save_ib_dfs(ib_dir, ib):
     generate_ib_execution_df(ib) # save in the global_state
 
     for df_name, file_name in df_file_map.items():
-        logger.info(f"save_ib_dfs, processing df_name: {df_name}, file_name: {file_name}")
+        logger.info(f"[save_ib_dfs] processing df_name: {df_name}, file_name: {file_name}")
         df = getattr(global_state, df_name, None)
         if df is not None:
             file_path = f"{ib_dir}/{file_name}"
@@ -113,7 +113,7 @@ async def save_ib_dfs_async(ib_dir, ib):
     #await generate_ib_execution_df_async(ib) # save in the global_state
 
     for df_name, file_name in df_file_map.items():
-        logger.info(f"save_ib_dfs, processing df_name: {df_name}, file_name: {file_name}")
+        logger.info(f"[save_ib_dfs] processing df_name: {df_name}, file_name: {file_name}")
 
         df = getattr(global_state, df_name, None)
         if df is not None:

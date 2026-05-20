@@ -94,8 +94,9 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     qc = qualified[0]
     if qc is None:
         logger.info(f"[get_option_contract_cached] @@@ Could not qualify contract for symbol={symbol}, key: {key}")
-    cache[key] = qc
-    global_state.conid_to_contract_cache[qc.conId] = qc
+    else:
+        cache[key] = qc
+        global_state.conid_to_contract_cache[qc.conId] = qc
     return qc
 
 async def get_option_contract_by_conid(ib, con_id):
