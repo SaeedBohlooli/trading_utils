@@ -10,6 +10,8 @@ from trading_utils import global_state
 from trading_utils import ib_contract
 import numpy as np
 import math
+import datetime
+
 
 # async def XXX_get_current_price_SPX(ib, symbol='SPX', max_retries=3, retry_delay=0.5): # TODO need to be removed ...
 #     #
@@ -635,3 +637,47 @@ def round_based_on_symbol(symbol, price):
         # return (price // 5) * 5 This returns the floor ..
     else:
         return price
+
+def cleanup_stale_quotes(max_age_seconds=120):
+    """
+    Removes entries from global_state.quote_cache whose timestamp is older
+    than max_age_seconds (default: 120 seconds = 2 minutes).
+
+    Timestamp format expected: "%Y-%m-%d %H:%M:%S"  (set by date_utils.time_now_yyyy_mm_dd_hh_mm_ss)
+
+    Call this periodically (e.g. once per engine cycle) to prevent the cache
+    from growing indefinitely with stale option/contract quotes.
+
+    Returns the number of entries removed.
+    """
+
+    now = datetime.datetime.now()
+    stale_con_ids = []
+
+    for con_id, entry in list(global_state.quote_cache.items()):
+        ts_str = entry.get('timestamp')
+        if ts_str is None:
+            # no timestamp — treat as stale
+            stale_con_ids.append(con_id)
+            continue
+        try:
+            ts = datetime.datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+            age_seconds = (now - ts).total_seconds()
+            if age_seconds > max_age_seconds:
+                stale_con_ids.append(con_id)
+        except Exception as e:
+            logger.warning(f"[cleanup_stale_quotes] Could not parse timestamp '{ts_str}' for conId={con_id}: {e}")
+            stale_con_ids.append(con_id)
+
+    for con_id in stale_con_ids:
+        entry = global_state.quote_cache.pop(con_id, None)
+        symbol = entry.get('symbol', '?') if entry else '?'
+        logger.info(f"[cleanup_stale_quotes] Removed stale quote: conId={con_id} symbol={symbol} age>{max_age_seconds}s")
+
+    if stale_con_ids:
+        logger.info(f"[cleanup_stale_quotes] Removed {len(stale_con_ids)} stale entries. "
+                    f"Cache size now: {len(global_state.quote_cache)}")
+    else:
+        logger.debug(f"[cleanup_stale_quotes] No stale entries. Cache size: {len(global_state.quote_cache)}")
+
+    return len(stale_con_ids)
