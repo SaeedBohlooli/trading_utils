@@ -36,7 +36,7 @@ def flatten(obj, prefix=''):
             continue
         value = getattr(obj, attr)
         if hasattr(value, '__dict__'):
-            # nested object → recurse
+            # nested object - > recurse
             result.update(flatten(value, prefix=f'{prefix}{attr}_'))
         else:
             result[f'{prefix}{attr}'] = value

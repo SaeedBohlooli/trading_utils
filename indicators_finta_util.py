@@ -111,7 +111,7 @@ def compute_and_add_indicator(df, indicator_config):
     # Compute indicator
     result = compute_indicator(df, indicator_config)
 
-    # Normalize Series → DataFrame
+    # Normalize Series - > DataFrame
     if isinstance(result, pd.Series):
         result = result.to_frame()
 

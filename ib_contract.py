@@ -14,7 +14,7 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
 
     cache = global_state.contract_cache
 
-    # 1) If already cached → return it immediately
+    # 1) If already cached - > return it immediately
     if symbol in cache:
         logger.info(f"[get_cached_contract] Returning cached contract for symbol={symbol}")
         return cache[symbol]
@@ -78,7 +78,7 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     if exchange is None:
         exchange = "CBOE" if symbol == "SPX" else "SMART"
 
-    # Cache miss → create new contract
+    # Cache miss - > create new contract
     contract = Option(
         symbol=symbol,
         lastTradeDateOrContractMonth=expiry,
@@ -93,7 +93,7 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
 
     qc = qualified[0]
     if qc is None:
-        logger.info(f"[get_option_contract_cached] @@@ Could not qualify contract for symbol={symbol}, key: {key}")
+        logger.warning(f"[get_option_contract_cached] @@@ Could not qualify contract for symbol={symbol}, key: {key}")
     else:
         cache[key] = qc
         global_state.conid_to_contract_cache[qc.conId] = qc

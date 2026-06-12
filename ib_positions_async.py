@@ -119,8 +119,8 @@ def convert_positions_to_dict(ib):
 async def close_position_async(ib, symbol, position_side=None, qty_to_close=None, order_ref= None):
     """
     Close your existing position for the given symbol.
-    - If long → send SELL
-    - If short → send BUY
+    - If long - > send SELL
+    - If short - > send BUY
     """
 
     # --- Step 1: get open positions
@@ -179,8 +179,8 @@ def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_clo
     # THIS IS VERY IMPORTANT TO AVOID MISTAKES
     """
     Close your existing position for the given symbol.
-    - If long → send SELL
-    - If short → send BUY
+    - If long - > send SELL
+    - If short - > send BUY
     """
     logger.info(f"[close_position_by_con_id] Closing position for symbol: {symbol}, con_id: {con_id}, side: {side}, qty_to_close: {qty_to_close}")
     if con_id is None:

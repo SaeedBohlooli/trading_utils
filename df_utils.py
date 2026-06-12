@@ -255,7 +255,7 @@ def move_last_x_to_position_y(df, x, y):
 
     Example:
         move_last_x_to_position_y(df, x=3, y=2)
-        → moves last 3 cols to become columns 2,3,4.
+        - > moves last 3 cols to become columns 2,3,4.
     """
 
     cols = list(df.columns)

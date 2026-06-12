@@ -53,10 +53,10 @@ def next_business_day(start_date=None, offset=1):
 
     next_day = start_date + datetime.timedelta(days=offset)
 
-    # If Saturday → skip to Monday
+    # If Saturday - > skip to Monday
     if next_day.weekday() == 5:
         next_day += datetime.timedelta(days=2)
-    if next_day.weekday() == 6:  # if Sunday → skip to Monday
+    if next_day.weekday() == 6:  # if Sunday - > skip to Monday
         next_day += datetime.timedelta(days=1)
 
     return next_day
@@ -119,6 +119,21 @@ def next_fridays(n=10):
 
     return result
 
+def next_business_days(n=10):
+    """
+    Return the next N business days (Mon–Fri) starting from today,
+    in yyyymmdd format — same format as next_fridays().
+    """
+    today = datetime.date.today()
+    result = []
+    day = today
+
+    while len(result) < n:
+        if day.weekday() < 5:  # Monday=0 … Friday=4
+            result.append(day.strftime("%Y%m%d"))
+        day += datetime.timedelta(days=1)
+
+    return result
 def business_days_ago(ts: str, days: int) -> pd.Timestamp:
     return pd.Timestamp(ts) - pd.offsets.BDay(days)
 

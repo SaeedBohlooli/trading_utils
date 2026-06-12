@@ -19,7 +19,7 @@ ib_config = {}
 quote_cache = {}
 conid_to_symbol_subscribed_for_quotes = {}  # conid -> symbol for subscribed quotes
 
-symbol_to_conid = {}        # Maps “SPX” → 416904
+symbol_to_conid = {}        # Maps “SPX” - > 416904
 conid_to_symbol = {}        # Reverse lookup
 contract_cache = {}     # symbol -> fully qualified contract object
 option_contract_cache = {}  # symbol+expiry+strike+right -> fully qualified contract object"

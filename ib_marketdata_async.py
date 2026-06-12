@@ -53,7 +53,7 @@ async def get_stock_historical_data(
         raise ValueError(f"Invalid timeframe '{time_frame}'. Use: 1D, 1H, 5M, 1M")
     ib_timeframe = BAR_SIZE_MAP[time_frame]
 
-    # user did not specify duration → use smart default
+    # user did not specify duration - > use smart default
     if duration is None or duration =="":
         duration = DEFAULT_DURATION_MAP[ib_timeframe]
 
@@ -90,7 +90,7 @@ async def get_stock_historical_data(
                 durationStr=duration,         # <--- goes backwards from endDate
                 barSizeSetting=ib_timeframe,
                 whatToShow=what_to_show, # or 'MIDPOINT', 'ASK', 'BID', 'ADJUSTED_LAST'. TRADES is typical for stocks but is slowest. go for MIDPOINT for faster data if no need to bars and volume
-                useRTH=use_RTH, # Use Regular Trading Hours # useRTH=True = IB trims bars, extra server work → slower.
+                useRTH=use_RTH, # Use Regular Trading Hours # useRTH=True = IB trims bars, extra server work - > slower.
                 keepUpToDate=False,
             )
             break  # success
@@ -105,7 +105,7 @@ async def get_stock_historical_data(
             await asyncio.sleep(retry_delay)
             retry_delay *= 1.5  # exponential backoff
 
-    # Convert results → DataFrame
+    # Convert results - > DataFrame
     logger.info(f"[get_stock_historical_data] Fetched {len(bars)} bars for {symbol}")
     df = util.df(bars)
     if df is None:
@@ -161,7 +161,7 @@ async def get_option_historical_data(
         raise ValueError(f"Invalid timeframe '{time_frame}'. Use: 1D, 1H, 5M, 1M")
     ib_timeframe = BAR_SIZE_MAP[time_frame]
 
-    # user did not specify duration → use smart default
+    # user did not specify duration - > use smart default
     if duration is None:
         duration = DEFAULT_DURATION_MAP[ib_timeframe]
 
