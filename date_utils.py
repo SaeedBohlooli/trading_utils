@@ -119,6 +119,57 @@ def next_fridays(n=10):
 
     return result
 
+
+def next_option_expirations(n=10, market: str = "NYSE") -> List[str]:
+    """
+    Return the next N option expiration dates in yyyymmdd format.
+    Options normally expire on Fridays.
+    If a Friday is a market holiday, the expiration moves to Thursday (the previous trading day).
+
+    Args:
+        n:      Number of expirations to return.
+        market: Market calendar to use for holiday checking (default: NYSE).
+
+    Returns:
+        List of yyyymmdd strings, e.g. ['20260619', '20260626', ...]
+    """
+    cal = mcal.get_calendar(market)
+    today = datetime.date.today()
+
+    # Build a generous schedule window (n weeks * 7 days + buffer)
+    end_date = today + datetime.timedelta(days=n * 7 + 14)
+    schedule = cal.schedule(start_date=today, end_date=end_date)
+    trading_days_set = set(schedule.index.normalize().date)
+
+    result = []
+
+    # Find next Friday
+    days_until_friday = (4 - today.weekday()) % 7
+    candidate_friday = today + datetime.timedelta(days=days_until_friday)
+
+    while len(result) < n:
+        if candidate_friday in trading_days_set:
+            # Friday is a trading day — normal expiration
+            result.append(candidate_friday.strftime("%Y%m%d"))
+        else:
+            # Friday is a holiday — fall back to Thursday
+            thursday = candidate_friday - datetime.timedelta(days=1)
+            if thursday in trading_days_set:
+                logger.info(
+                    f"[next_option_expirations] Friday {candidate_friday} is a holiday, "
+                    f"using Thursday {thursday} instead."
+                )
+                result.append(thursday.strftime("%Y%m%d"))
+            else:
+                logger.warning(
+                    f"[next_option_expirations] Both Friday {candidate_friday} and "
+                    f"Thursday {thursday} are non-trading days, skipping."
+                )
+
+        candidate_friday += datetime.timedelta(days=7)
+
+    return result
+
 def next_business_days(n=10):
     """
     Return the next N business days (Mon–Fri) starting from today,
