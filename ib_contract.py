@@ -63,7 +63,7 @@ def create_option_contract(symbol=None, expiry=None,strike=None, right=None, tra
 
 async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, right=None, trading_class=None, exchange=None):
 
-    key = (symbol, expiry, int(strike), right.upper())
+    key = (symbol, expiry, float(strike), right.upper())
     cache = global_state.option_contract_cache
 
     # Cache hit
@@ -95,6 +95,7 @@ async def get_option_contract_cached(ib, symbol=None, expiry=None,strike=None, r
     if qc is None:
         logger.warning(f"[get_option_contract_cached] @@@ Could not qualify contract for symbol={symbol}, key: {key}")
     else:
+        logger.info(f"[get_option_contract_cached], contract created. {symbol}, key: {key}")
         cache[key] = qc
         global_state.conid_to_contract_cache[qc.conId] = qc
     return qc
