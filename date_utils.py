@@ -170,17 +170,24 @@ def next_option_expirations(n=10, market: str = "NYSE") -> List[str]:
 
     return result
 
-def next_business_days(n=10):
+def next_business_days(n=10, market: str = "NYSE") -> List[str]:
     """
-    Return the next N business days (Mon–Fri) starting from today,
-    in yyyymmdd format — same format as next_fridays().
+    Return the next N business days starting from today, in yyyymmdd format.
+    Skips weekends AND market holidays (NYSE by default).
     """
+    cal = mcal.get_calendar(market)
     today = datetime.date.today()
+
+    # Build a generous schedule window
+    end_date = today + datetime.timedelta(days=n * 2 + 14)
+    schedule = cal.schedule(start_date=today, end_date=end_date)
+    trading_days_set = set(schedule.index.normalize().date)
+
     result = []
     day = today
 
     while len(result) < n:
-        if day.weekday() < 5:  # Monday=0 … Friday=4
+        if day in trading_days_set:
             result.append(day.strftime("%Y%m%d"))
         day += datetime.timedelta(days=1)
 
