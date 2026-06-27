@@ -111,7 +111,7 @@ async def process_user_requests(ib, app_config, application_state):
                 unique_run_number=application_state.get('unique_run_number'),
                 alias=alias,
             )
-            if order_type.lower() == 'option':
+            if order_type.upper() == 'OPTION':
                 result = await ib_orders_async.submit_option_order_single_leg(
                     ib,
                     symbol=symbol,
