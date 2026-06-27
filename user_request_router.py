@@ -37,7 +37,7 @@ async def process_user_requests(ib, app_config, application_state):
             requests_needs_to_delete.append(user_request)
             continue  # Skip already processed requests
         logger.info(f"[process_user_requests] Processing user request: {user_request}")
-        if user_request.get('request_type', '').lower() == 'close_position':
+        if user_request.get('request_type', '').upper() == 'CLOSE_POSITION':
             symbol = user_request.get('symbol')
             if symbol:
                 logger.info(f"Closing position for symbol: {symbol}")
@@ -45,7 +45,7 @@ async def process_user_requests(ib, app_config, application_state):
                 contract_type = user_request.get('contract_type', 'STK')
                 contract_id = user_request.get('contract_id', -1)
                 if portfolio_id.startswith('p107'):
-                    logger.info(f" Skipping close_position for symbol: {symbol} due to portfolio_id: {portfolio_id}")
+                    logger.info(f"[process_user_requests] Skipping close_position for symbol: {symbol} due to portfolio_id: {portfolio_id}")
                     application_state.setdefault('forced_exits', []).append(user_request)
                     user_request['status'] += '|ENGINE_PROCESSED'
                     requests_needs_to_delete.append(user_request)
@@ -57,39 +57,39 @@ async def process_user_requests(ib, app_config, application_state):
                         result = await ib_positions_async.close_position_async(ib, symbol, order_ref=order_ref)
 
                     if result:
-                        logger.info(f"Successfully closed position for symbol: {symbol}")
+                        logger.info(f"[process_user_requests] Successfully closed position for symbol: {symbol}")
                         user_request['status'] += '|ENGINE_PROCESSED'
                         requests_needs_to_delete.append(user_request)
                     else:
-                        logger.info(f"NOT Successfully closed position for symbol: {symbol}")
+                        logger.info(f"[process_user_requests]  NOT Successfully closed position for symbol: {symbol}")
                         user_request['status'] += '|ENGINE_PROCESSED_ERROR'
                         requests_needs_to_delete.append(user_request)
             else:
-                logger.warning("No symbol provided for close_position action.")
-        elif user_request.get('request_type', '').lower() == 'close_all_positions':
-            logger.info("close_all_positions ... .")
+                logger.warning("[process_user_requests]  No symbol provided for close_position action.")
+        elif user_request.get('request_type', '').upper() == 'CLOSE_ALL_POSITIONS':
+            logger.info("[process_user_requests] close_all_positions ... .")
             order_ref = ib_orders_async.generate_order_ref(application_state.get('portfolio_id'),event='CLOSE', unique_run_number=application_state.get('unique_run_number'), alias='CLOSE_ALL')
             result = await ib_positions_async.close_all_open_position_async(ib, order_ref=order_ref)
             if result:
-                logger.info("Successfully closes all positions.")
+                logger.info("[process_user_requests] Successfully closes all positions.")
                 user_request['status'] += '|ENGINE_PROCESSED'
                 requests_needs_to_delete.append(user_request)
 
 
-        elif user_request.get('request_type', '').lower() == 'cancel_all_orders':
-            logger.info("cancel_all_orders ... .")
+        elif user_request.get('request_type', '').upper() == 'CANCEL_ALL_ORDERS':
+            logger.info("[process_user_requests] cancel_all_orders ... .")
             result = await ib_orders_async.cancel_all_open_orders(ib)
             if result:
-                logger.info("Successfully cancel_all_orders.")
+                logger.info("[process_user_requests] Successfully cancel_all_orders.")
                 user_request['status'] += '|ENGINE_PROCESSED'
                 requests_needs_to_delete.append(user_request)
 
-        elif user_request.get('request_type', '').lower() in (
-            'open_order_from_control_panel',
-            'open_order_from_xui',
+        elif user_request.get('request_type', '').upper() in (
+            'OPEN_ORDER_FROM_CONTROL_PANEL',
+            'OPEN_ORDER_FROM_XUI',
         ):
             req_type = user_request.get('request_type', '')
-            logger.info(f"checking {req_type} (external open order) ...")
+            logger.info(f"[process_user_requests] checking {req_type} (external open order) ...")
 
             symbol = user_request.get('symbol')
             quantity = int(user_request.get('quantity',0))
@@ -101,7 +101,7 @@ async def process_user_requests(ib, app_config, application_state):
             web_request_id = user_request.get('web_request_id','')
 
             logger.info(
-                f"{req_type} ... Placing order for {symbol}, quantity: {quantity}, side: {side}, "
+                f"[process_user_requests] {req_type} ... Placing order for {symbol}, quantity: {quantity}, side: {side}, "
                 f"order_type: {order_type}, strike: {strike}, expiry: {expiry} ."
             )
             alias = 'XUI_ORDER' if req_type.upper() == 'OPEN_ORDER_FROM_XUI' else 'CONTROL_PANEL_ORDER'
@@ -123,12 +123,12 @@ async def process_user_requests(ib, app_config, application_state):
                     order_ref=order_ref,
                 )
                 if result:
-                    logger.info(f"Successfully placed order ({req_type}).")
+                    logger.info(f"[process_user_requests] Successfully placed order ({req_type}).")
                     user_request['status'] += '|ENGINE_PROCESSED'
                     requests_needs_to_delete.append(user_request)
                 else:
                     logger.warning(
-                        f"{req_type}: order not placed (contract qualify failed or submit returned no trade). "
+                        f"[process_user_requests] {req_type}: order not placed (contract qualify failed or submit returned no trade). "
                         f"symbol={symbol} strike={strike} expiry={expiry} right={right} side={side}. "
                         f"Check engine logs for 'Could not qualify contract'."
                     )

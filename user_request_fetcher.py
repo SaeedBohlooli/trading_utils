@@ -14,7 +14,7 @@ def fetch_user_request(app_config, application_state):
             return {}
 
         url = f"http://{host}:{port}/api/get-all-requests"
-        logger.info(f"[fetch_user_request] Pulling data from Flask at {url} ")
+        logger.debug(f"[fetch_user_request] Pulling data from Flask at {url} ")
         resp = requests.get(url)
         body = resp.json()
         user_requests = body.get('requests', [])
