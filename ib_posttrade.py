@@ -104,7 +104,12 @@ def save_ib_dfs(ib_dir, ib):
         df = getattr(global_state, df_name, None)
         if df is not None:
             file_path = f"{ib_dir}/{file_name}"
-            df_utils.save_df_to_csv(df, file_path=file_path, mode='a', tabular=True)
+            if df_name == 'ib_portfolio_df':
+                mode = 'w'
+            else:
+                mode = 'a'
+
+            df_utils.save_df_to_csv(df, file_path=file_path, mode=mode, tabular=True)
 
     return
 
