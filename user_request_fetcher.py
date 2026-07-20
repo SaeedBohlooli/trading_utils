@@ -18,7 +18,7 @@ def fetch_user_request(app_config, application_state):
         resp = requests.get(url)
         body = resp.json()
         user_requests = body.get('requests', [])
-        logger.info(f"[fetch_user_request] Pulling data from Flask, {url}, resp.status_code: {resp.status_code}, type: {type(body)}, \n body: {body} ")
+        logger.info(f"[fetch_user_request] Pulling data from Flask, {url}, resp.status_code: {resp.status_code}, body: {body} ")
 
         application_state.setdefault('user_requests', []).extend(user_requests)
 

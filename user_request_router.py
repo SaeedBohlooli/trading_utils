@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 from trading_utils import *
 
 def remove_requests_from_user_requests(application_state, requests_to_remove):
+    if len(requests_to_remove) == 0:
+        return
     logger.info(f"remove_request called with requests_to_remove: {requests_to_remove}")
     remaining_requests = [
         req for req in application_state.get('user_requests', [])
@@ -18,6 +20,8 @@ def remove_requests_from_user_requests(application_state, requests_to_remove):
     logger.info(f"Remaining requests after removal: {application_state['user_requests']}")
 
 def archive_user_requests(application_state, requests_to_archive):
+    if len(requests_to_archive) == 0:
+        return
     logger.info(f"[archive_user_requests] requests_to_archive: {requests_to_archive}")
     remaining_requests = [
         req for req in application_state.get('user_requests', [])
@@ -32,11 +36,11 @@ async def process_user_requests(ib, app_config, application_state):
     logger.info(f"[process_user_requests]  {application_state.get('user_requests')}")
     requests_needs_to_delete = []
     for user_request in application_state.get('user_requests', []):
-        logger.info(f"[process_user_requests] Processing user request,  {user_request}")
+        logger.info(f"[process_user_requests] Processing user request. user_request: {user_request}")
         if 'ENGINE_PROCESSED' in user_request.get('status', '') :
             requests_needs_to_delete.append(user_request)
             continue  # Skip already processed requests
-        logger.info(f"[process_user_requests] Processing user request: {user_request}")
+        logger.info(f"[process_user_requests] Processing user request. user_request: {user_request}")
         if user_request.get('request_type', '').upper() == 'CLOSE_POSITION':
             symbol = user_request.get('symbol')
             if symbol:
@@ -87,9 +91,9 @@ async def process_user_requests(ib, app_config, application_state):
         elif user_request.get('request_type', '').upper() in (
             'OPEN_ORDER_FROM_CONTROL_PANEL',
             'OPEN_ORDER_FROM_XUI',
-        ):
+        ): # This is NOT for 108 coming for case_manual
             req_type = user_request.get('request_type', '')
-            logger.info(f"[process_user_requests] checking {req_type} (external open order) ...")
+            logger.info(f"[process_user_requests] Checking {req_type} (external open order), user_request: {user_request}")
 
             symbol = user_request.get('symbol')
             quantity = int(user_request.get('quantity',0))
