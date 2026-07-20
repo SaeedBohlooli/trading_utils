@@ -35,7 +35,7 @@ def get_yyyy_mm_dd():
 
 def time_now_yyyy_mm_dd_hh_mm_ss_as_id():
     now_date_time = datetime.datetime.now()
-    return now_date_time.strftime("%Y%m%d-%H%M%S")
+    return now_date_time.strftime("%Y%m%d-%H%M%S%f")[:-3]
 
 def format_yyyymmdd(date_obj):
     """

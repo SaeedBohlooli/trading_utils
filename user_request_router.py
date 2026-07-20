@@ -40,7 +40,7 @@ async def process_user_requests(ib, app_config, application_state):
         if user_request.get('request_type', '').upper() == 'CLOSE_POSITION':
             symbol = user_request.get('symbol')
             if symbol:
-                logger.info(f"Closing position for symbol: {symbol}")
+                logger.info(f"[process_user_requests] Closing position for symbol: {symbol}")
                 portfolio_id = application_state.get('portfolio_id')
                 contract_type = user_request.get('contract_type', 'STK')
                 contract_id = user_request.get('contract_id', -1)
