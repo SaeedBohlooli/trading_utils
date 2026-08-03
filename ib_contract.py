@@ -20,12 +20,29 @@ async def get_cached_contract(ib: IB, symbol: str, contract_month=None) -> Contr
         return cache[symbol]
 
     logger.info(f"[get_cached_contract] Qualifying new contract for symbol={symbol}, contract_month: {contract_month}")
+    check_type_in_IB = False
+
+    reg = global_state.symbol_registry.get(symbol)
+    if reg:
+        # known symbol - use config-driven metadata
+        secType = reg.get("secType")
+        exchange = reg.get("exchange")
+    elif check_type_in_IB: # This didn't work
+        # unknown symbol - ask IB
+        details = await ib.reqContractDetailsAsync(Contract(symbol=symbol))
+        logger.info(f"[get_cached_contract] IB returned {len(details)} contract details for symbol={symbol}, details: {details}")
+        secType = details[0].contract.secType
+        exchange = details[0].contract.exchange
+    else:
+        secType = "STK"
+        exchange = "SMART"
 
     if contract_month is not None:
         contract = Future(symbol, contract_month, 'CME')
-    elif symbol == 'SPX':
+    elif secType == 'IND':
         contract = Index(symbol=symbol, exchange="CBOE", currency="USD")
     else:
+        # it is index ...
         contract = Stock(symbol, "SMART", "USD")
 
     # Qualify once (async)

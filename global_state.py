@@ -43,7 +43,13 @@ symbol_registry = {
         "secType": "FUT",
         "exchange": "CME",
         "currency": "USD",
+    },
+    "VIX": {
+        "secType": "IND",
+        "exchange": "CBOE",
+        "currency": "USD",
     }
+
 }
 
 

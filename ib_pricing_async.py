@@ -681,3 +681,67 @@ def cleanup_stale_quotes(max_age_seconds=120):
         logger.debug(f"[cleanup_stale_quotes] No stale entries. Cache size: {len(global_state.quote_cache)}")
 
     return len(stale_con_ids)
+
+async def filter_valid_symbols(ib, symbols):
+    """
+    Given a list of symbols, attempts to qualify each one with IB.
+    Returns only the symbols that IB successfully qualifies (valid symbols).
+    Invalid or unknown symbols are logged and excluded.
+
+    Args:
+        ib: IB connection instance
+        symbols: list of symbol strings (e.g. ['AAPL', 'TSLA', 'INVALIDXYZ'])
+        contract_month: optional contract month for futures (e.g. '202509')
+
+    Returns:
+        list[str]: valid symbols only
+    """
+    valid = []
+    for symbol in symbols:
+        secType = None
+        exchange = None
+        currency = None
+
+        # TODO need t be fixed for FUT and INDX
+        reg = global_state.symbol_registry.get(symbol)
+        secType = "STK"
+        exchange = "SMART"
+        currency = "USD"
+        contract_month = ''
+
+        # if reg is not None:
+        #     secType = reg.get("secType")
+        #     exchange = reg.get("exchange")
+        #     currency = reg.get("currency")
+        # elif contract_month is not None:
+        #     secType = "FUT"
+        #     exchange = "CME"
+        #     currency = "USD"
+        # else:
+        #     secType = "STK"
+        #     exchange = "SMART"
+        #     currency = "USD"
+
+        try:
+            if secType == "IND":
+                contract = Index(symbol=symbol, exchange=exchange, currency=currency)
+            elif secType == "STK":
+                contract = Stock(symbol, exchange, currency)
+            elif secType == "FUT":
+                contract = Future(symbol=symbol, exchange=exchange, currency=currency,
+                                  lastTradeDateOrContractMonth=contract_month)
+            else:
+                logger.warning(f"[filter_valid_symbols] Unsupported secType '{secType}' for {symbol}, skipping.")
+                continue
+
+            details = await ib.qualifyContractsAsync(contract)
+            if details and details[0] is not None and details[0].conId != 0:
+                logger.info(f"[filter_valid_symbols] '{symbol}' is valid (conId={details[0].conId})")
+                valid.append(symbol)
+            else:
+                logger.warning(f"[filter_valid_symbols] '{symbol}' is INVALID — no conId returned, skipping.")
+        except Exception as e:
+            logger.warning(f"[filter_valid_symbols] '{symbol}' raised exception during qualification: {e}, skipping.")
+
+    logger.info(f"[filter_valid_symbols] {len(valid)}/{len(symbols)} symbols valid: {valid}")
+    return valid
