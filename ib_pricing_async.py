@@ -564,7 +564,7 @@ async def check_are_they_shortable(ib, contracts):
     Given a list of conIds, fetch the current borrow fees for each.
     Returns a DataFrame with conId and fee_per_annum columns.
     """
-    logger.info(f"check_are_they_shortable:  {len(contracts)} ")
+    logger.info(f"[check_are_they_shortable]:  {len(contracts)} ")
 
     fees_data = []
     for c in contracts:
@@ -597,10 +597,10 @@ async def check_are_they_shortable(ib, contracts):
                 "shortable": shortable,
 
             })
-            logger.info(f"Fetched  shortable: {shortable} shortableShares: {shortableShares}, {c.symbol}")
+            logger.info(f"[check_are_they_shortable] Fetched  shortable: {shortable} shortableShares: {shortableShares}, {c.symbol}")
 
         except Exception as e:
-            logger.error(f"@@@ Error check_are_they_shortable fee for conId {c}: {e}")
+            logger.error(f"[check_are_they_shortable] @@@ Error check_are_they_shortable fee for conId {c}: {e}")
 
     # df = pd.DataFrame(fees_data)
     return fees_data
@@ -682,6 +682,8 @@ def cleanup_stale_quotes(max_age_seconds=120):
 
     return len(stale_con_ids)
 
+
+
 async def filter_valid_symbols(ib, symbols):
     """
     Given a list of symbols, attempts to qualify each one with IB.
@@ -745,3 +747,21 @@ async def filter_valid_symbols(ib, symbols):
 
     logger.info(f"[filter_valid_symbols] {len(valid)}/{len(symbols)} symbols valid: {valid}")
     return valid
+
+def get_current_price_timestamp(symbol):
+    con_id = global_state.symbol_to_conid.get(symbol)
+    if con_id is None:
+        logger.warning(f"get_current_price_timestamp: No conId found for symbol: {symbol}")
+        return None
+
+    quote = global_state.quote_cache.get(con_id)
+    if quote is None:
+        logger.warning(f"get_current_price_timestamp: No quote found in cache for symbol: {symbol}, conId: {con_id}")
+        return None
+
+    timestamp = quote.get("timestamp")
+    if timestamp is None:
+        logger.warning(f"get_current_price_timestamp: No timestamp found in quote for symbol: {symbol}, conId: {con_id}")
+        return None
+
+    return timestamp
