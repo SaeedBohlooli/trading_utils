@@ -116,7 +116,7 @@ def convert_positions_to_dict(ib):
 # TODO change to close_position_by_symbiol
 # TODO Thisis very dangerous. bcs for SPX options, will close all positions ...
 # TODO need to check type of contract ...
-async def close_position_async(ib, symbol, position_side=None, qty_to_close=None, order_ref= None):
+async def close_position_async(ib, symbol, position_side=None, qty_to_close=None, order_ref= None, algo_strategy=None, adaptive_priority=None):
     """
     Close your existing position for the given symbol.
     - If long - > send SELL
@@ -127,14 +127,14 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
     positions = ib.positions()
 
     for pos in positions:
-        logger.info(f"Close_position_async, Checking position: {pos}  {pos.contract} ")
+        logger.info(f"[close_position_async] Checking position: {pos}  {pos.contract}")
 
         if pos.contract.symbol != symbol:
             continue
 
         position_qty = pos.position
         if position_qty == 0:
-            logger.info(f"@@ close_position_async, No open position to close for {symbol}")
+            logger.info(f"[close_position_async] No open position to close for {symbol}")
             return None
 
         # Determine closing side
@@ -147,7 +147,7 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
 
 
 
-        logger.info(f"close_position_async, Closing {symbol}: {action} qty_to_close: {qty_to_close}, position_qty={position_qty}, order_ref: {order_ref}")
+        logger.info(f"[close_position_async] Closing {symbol}: {action} qty_to_close: {qty_to_close}, position_qty={position_qty}, order_ref: {order_ref}")
 
         # Create a market order
         order = Order(
@@ -161,17 +161,24 @@ async def close_position_async(ib, symbol, position_side=None, qty_to_close=None
         if getattr(pos, "account", None):
             order.account = pos.account
 
+        if algo_strategy:
+            order.algoStrategy = algo_strategy
+            if adaptive_priority:
+                order.algoParams = [TagValue("adaptivePriority", str(adaptive_priority))]
+            logger.info(f"[close_position_async] Using algo strategy: {algo_strategy}, adaptive_priority: {adaptive_priority}")
+
+
         pos.contract.exchange = "SMART"  # Ensure exchange is set
         # Place order
         trade = ib.placeOrder(pos.contract, order)
         # trade = ib.placeOrder(contract, order)
         trade.fillEvent += ib_posttrade.on_fill
-        logger.info(f"close_position_async, Order sent ....order_ref: {order_ref}")
-        logger.info(f"close_position_async, trade: {trade}")
+        logger.info(f"[close_position_async] Order sent ....order_ref: {order_ref}")
+        logger.info(f"[close_position_async] trade: {trade}")
 
         return True
 
-    logger.warning(f"@@@ close_position_async, No position found for symbol={symbol}, order_ref: {order_ref}")
+    logger.warning(f"[close_position_async] @@@ No position found for symbol={symbol}, order_ref: {order_ref}")
     return False
 
 def close_position_by_con_id(ib, symbol=None, side=None, con_id=None, qty_to_close=None, order_ref= None, exchange= None):
