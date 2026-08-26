@@ -6,7 +6,17 @@ logger = logging.getLogger(__name__)
 
 import yaml
 
-def load_config(file_path ='config.yaml') -> dict:
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge override into base. Dicts are merged; all other types (scalars, lists) are replaced."""
+    for key, value in override.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
+def load_config(file_path ='config.yaml', deep_merge=True) -> dict:
     config = {}
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
@@ -27,7 +37,11 @@ def load_config(file_path ='config.yaml') -> dict:
                 local_config = {}
 
             if local_config != None or local_config != {}:
-                config.update(local_config)
+                if deep_merge:
+                    _deep_merge(config, local_config)
+                else:
+                    config.update(local_config)
+
 
     logger.debug(f"[load_config] config: {config}")
     logger.info(f"[load_config] config is loaded, {file_path}")
