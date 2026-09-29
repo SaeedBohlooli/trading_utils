@@ -1,11 +1,15 @@
 import logging
 import json
-logger = logging.getLogger(__name__)
-from pprint import pprint
+import pprint
 
-def print_map_pretty(map, msg = ''):
-    logger.info(f"{msg}\n{pprint.pformat(map)}")
-    return
+logger = logging.getLogger(__name__)
+
+
+def print_map_pretty(map_data, msg=''):
+    pretty = pprint.pformat(map_data)
+    logger.info(f"[print_map_pretty] {msg}\n{pretty}")
+    return pretty
+
 
 
 

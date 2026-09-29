@@ -16,6 +16,14 @@ def _deep_merge(base: dict, override: dict) -> dict:
     return base
 
 
+def deep_merge_dict(base: dict, override: dict) -> dict:
+    if base is None:
+        base = {}
+    if override is None:
+        return base
+    return _deep_merge(base, override)
+
+
 def load_config(file_path ='config.yaml', deep_merge=True) -> dict:
     config = {}
     if os.path.exists(file_path):
@@ -50,7 +58,7 @@ def load_config(file_path ='config.yaml', deep_merge=True) -> dict:
 
 
 
-def load_app_config(portfolio_id, config_folder='',load_coommon=True):
+def load_app_config(portfolio_id, config_folder='', load_coommon=True, deep_merge=True):
 
     config = {}
     if config_folder == '':
@@ -64,18 +72,27 @@ def load_app_config(portfolio_id, config_folder='',load_coommon=True):
 
     logger.info(f"[load_app_config] loading app_config ....")
     app_config = load_config(f'{configs_folder}/config-{portfolio_id}.yaml')
-    app_config.update(config)
+    if config:
+        if deep_merge:
+            deep_merge_dict(app_config, config)
+        else:
+            app_config.update(config)
     logger.info(f"[load_app_config] loaded.")
 
     for child_config in app_config.get('child_configs', []):
         logger.info(f"[load_app_config] loading child config: {child_config} ....")
         child_cfg = load_config(f'{configs_folder}/{child_config}')
-        app_config.update(child_cfg)
+        if child_cfg:
+            if deep_merge:
+                deep_merge_dict(app_config, child_cfg)
+            else:
+                app_config.update(child_cfg)
         logger.info(f"[load_app_config] loaded. , child_config: {child_config}")
 
     return app_config
 
-def load_runtime_config(portfolio_id, config_folder='',load_coommon=False):
+
+def load_runtime_config(portfolio_id, config_folder='', load_coommon=False, deep_merge=True):
 
     config = {}
     if config_folder == '':
@@ -83,7 +100,6 @@ def load_runtime_config(portfolio_id, config_folder='',load_coommon=False):
 
     logger.info(f"[load_runtime_config] loading runtime-config  ....")
     config = load_config(f'{configs_folder}/config-{portfolio_id}-runtime.yaml')
-    config.update(config)
     logger.info(f"[load_runtime_config] loaded.")
 
     return config
